@@ -60,7 +60,6 @@ public class UserServiceImpl implements UserService {
         String inserted_password = request.getPassword();
         AuthResponse response = new AuthResponse(
                 inserted_username,"Not available","Invalid username or password",401);
-
         try{
             User user = repository.getByUsername(inserted_username);
             if(checkPassword(inserted_username,inserted_password)){

@@ -12,6 +12,12 @@ import java.sql.ResultSet;
 
 public class UserRepositoryImpl implements UserRepository {
     private static final Logger logger = LoggerFactory.getLogger(UserRepositoryImpl.class);
+    private final DbUtils dbUtils;
+
+    public UserRepositoryImpl(DbUtils dbUtils){
+        this.dbUtils = dbUtils;
+    }
+
     @Override
     public void save(User UserToSave, PasswordEncoder passwordEncoder) {
         DbUtils.ThrowingConsumer<Connection,Exception> insertUserIntoDb = (conn) -> {
@@ -24,7 +30,7 @@ public class UserRepositoryImpl implements UserRepository {
             }
         };
         try{
-            DbUtils.doInTransaction(insertUserIntoDb);
+            dbUtils.doInTransaction(insertUserIntoDb);
             logger.info("User saved successfully in the database.");
         }catch (Exception e){
             logger.error("User not saved.");
@@ -57,6 +63,6 @@ public class UserRepositoryImpl implements UserRepository {
                 return user;
             }
         };
-        return DbUtils.doInTransaction(retrieveUser);
+        return dbUtils.doInTransaction(retrieveUser);
     }
 }

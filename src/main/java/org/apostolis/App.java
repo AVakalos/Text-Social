@@ -4,6 +4,7 @@ package org.apostolis;
 import io.javalin.Javalin;
 import org.apostolis.controller.UserController;
 import org.apostolis.model.Role;
+import org.apostolis.repository.DbUtils;
 import org.apostolis.repository.UserRepository;
 import org.apostolis.repository.UserRepositoryImpl;
 import org.apostolis.security.JjwtTokenManagerImpl;
@@ -18,8 +19,8 @@ public class App
     public static void main( String[] args ){
 
         // Instantiate the controllers
-
-        UserRepository userRepository = new UserRepositoryImpl();
+        DbUtils dbUtils = new DbUtils();
+        UserRepository userRepository = new UserRepositoryImpl(dbUtils);
         TokenManager tokenManager = new JjwtTokenManagerImpl();
         UserService userService = new UserServiceImpl(userRepository, tokenManager);
         UserController userController = new UserController(userService);

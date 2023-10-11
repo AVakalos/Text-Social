@@ -4,11 +4,20 @@ import java.sql.*;
 import static java.util.Objects.isNull;
 
 public class DbUtils {
-    private static final String url = "jdbc:postgresql://localhost:5433/TextSocial";
-    private static final String user="postgres";
-    private static final String password = "1234";
+    private  String url = "jdbc:postgresql://localhost:5433/TextSocial";
+    private String user="postgres";
+    private String password = "1234";
 
     private static final ThreadLocal<Connection> thlconn = new ThreadLocal<Connection>();
+
+
+    public DbUtils() { }
+
+    public DbUtils(String url, String user, String password) {
+        this.url = url;
+        this.user = user;
+        this.password = password;
+    }
 
     // Custom Functional Interfaces to handle Exceptions in lambda expressions
     @FunctionalInterface
@@ -24,7 +33,7 @@ public class DbUtils {
 
     // Overloaded function for transaction management
     // Function lambda
-    public static <R> R doInTransaction(ThrowingFunction<Connection,R, Exception> dbtask) throws Exception{
+    public <R> R doInTransaction(ThrowingFunction<Connection,R, Exception> dbtask) throws Exception{
 
         boolean is_parent_transaction = false;
         R rs = null;
@@ -53,7 +62,7 @@ public class DbUtils {
     }
 
     // Consumer lambda
-    public static void doInTransaction(ThrowingConsumer<Connection, Exception> dbtask) throws Exception{
+    public void doInTransaction(ThrowingConsumer<Connection, Exception> dbtask) throws Exception{
 
         boolean is_parent_transaction = false;
         if (isNull(thlconn.get())){
