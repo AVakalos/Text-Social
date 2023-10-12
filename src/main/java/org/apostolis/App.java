@@ -9,6 +9,7 @@ import org.apostolis.repository.UserRepository;
 import org.apostolis.repository.UserRepositoryImpl;
 import org.apostolis.security.JjwtTokenManagerImpl;
 import org.apostolis.security.TokenManager;
+import org.apostolis.security.PasswordEncoder;
 import org.apostolis.service.UserService;
 import org.apostolis.service.UserServiceImpl;
 
@@ -22,7 +23,8 @@ public class App
         DbUtils dbUtils = new DbUtils();
         UserRepository userRepository = new UserRepositoryImpl(dbUtils);
         TokenManager tokenManager = new JjwtTokenManagerImpl();
-        UserService userService = new UserServiceImpl(userRepository, tokenManager);
+        PasswordEncoder passwordEncoder = new PasswordEncoder();
+        UserService userService = new UserServiceImpl(userRepository, tokenManager,passwordEncoder);
         UserController userController = new UserController(userService);
 
         Javalin app = Javalin.create().start(7777);

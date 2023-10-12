@@ -4,11 +4,8 @@ import org.apostolis.model.AuthRequest;
 import org.apostolis.model.AuthResponse;
 import org.apostolis.model.SignupResponse;
 import org.apostolis.model.User;
-import org.apostolis.repository.DbUtils;
 import org.apostolis.repository.UserRepository;
 import org.apostolis.security.PasswordEncoder;
-
-import java.sql.*;
 
 import org.apostolis.security.TokenManager;
 import org.slf4j.Logger;
@@ -22,10 +19,10 @@ public class UserServiceImpl implements UserService {
     private TokenManager tokenManager;
     private PasswordEncoder passwordEncoder;
 
-    public UserServiceImpl(UserRepository repository, TokenManager tokenManager){
+    public UserServiceImpl(UserRepository repository, TokenManager tokenManager, PasswordEncoder passwordEncoder){
         this.repository = repository;
         this.tokenManager = tokenManager;
-        passwordEncoder = new PasswordEncoder();
+        this.passwordEncoder = passwordEncoder;
     }
 
     public boolean checkPassword(String username, String password) {
@@ -43,10 +40,16 @@ public class UserServiceImpl implements UserService {
     public SignupResponse signup(User UserToSave) {
         SignupResponse response = new SignupResponse("Username is already taken! Try a different one.",406);
         try{
-            repository.getByUsername(UserToSave.getUsername());
-            return response;
-        }catch (Exception e){
-            System.out.println(e.getMessage());
+            logger.info("Checking if username is already taken...");
+
+            if(repository.getByUsername(UserToSave.getUsername()) != null){
+                logger.info("Username is already taken.");
+                return response;
+            }else{
+                logger.info("The username is available for signup.");
+            }
+        }catch(Exception e){
+            logger.error(e.getMessage());
         }
         repository.save(UserToSave, passwordEncoder);
         response.setMessage("User signed up.");

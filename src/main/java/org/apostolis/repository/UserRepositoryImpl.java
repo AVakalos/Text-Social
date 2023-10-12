@@ -1,6 +1,6 @@
 package org.apostolis.repository;
 
-import org.apostolis.exception.UserNotFoundException;
+
 import org.apostolis.model.User;
 import org.apostolis.security.PasswordEncoder;
 import org.slf4j.Logger;
@@ -49,7 +49,7 @@ public class UserRepositoryImpl implements UserRepository {
                 ResultSet rs = retrieve_stm.executeQuery();
                 User user = null;
                 if(rs.next()){
-                    logger.info("User: "+username+" found successfully in database");
+                    logger.info("User: "+username+" found in the database");
                     rs.beforeFirst();
                     while(rs.next()){
                         user = new User(
@@ -58,7 +58,8 @@ public class UserRepositoryImpl implements UserRepository {
                                 rs.getString("role"));
                     }
                 }else{
-                    throw new UserNotFoundException("User: "+username+" could not be found!");
+                    //throw new UserNotFoundException("User: "+username+" is not in the database");
+                    return null;
                 }
                 return user;
             }

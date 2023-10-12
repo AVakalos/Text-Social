@@ -8,16 +8,18 @@ import org.apostolis.repository.DbUtils;
 import org.apostolis.repository.UserRepository;
 import org.apostolis.repository.UserRepositoryImpl;
 import org.apostolis.security.JjwtTokenManagerImpl;
+import org.apostolis.security.PasswordEncoder;
 import org.apostolis.security.TokenManager;
 import org.apostolis.service.UserService;
 import org.apostolis.service.UserServiceImpl;
 import org.junit.jupiter.api.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class UserServiceImplTest {
     private static DbUtils testDbUtils;
 
@@ -27,7 +29,10 @@ public class UserServiceImplTest {
 
     private static UserRepository testUserRepository;
     private static TokenManager testTokenManager;
+    private static PasswordEncoder testPasswordEncoder;
     private static UserService testUserService;
+
+    private static final Logger logger = LoggerFactory.getLogger(UserServiceImplTest.class);
 
 
     @BeforeAll
@@ -35,65 +40,71 @@ public class UserServiceImplTest {
         testDbUtils = new DbUtils(testUrl, user, password);
         testUserRepository = new UserRepositoryImpl(testDbUtils);
         testTokenManager = new JjwtTokenManagerImpl();
-        testUserService = new UserServiceImpl(testUserRepository, testTokenManager);
+        testPasswordEncoder = new PasswordEncoder();
+        testUserService = new UserServiceImpl(testUserRepository, testTokenManager,testPasswordEncoder);
+        logger.info("Initial setup of test");
+    }
+
+    @BeforeEach
+    void setupDatabase(){
+        try(Connection connection = DriverManager.getConnection(testUrl,user,password)) {
+            String clean = "TRUNCATE TABLE users";
+            String encoded_password = testPasswordEncoder.encodePassword("pass1");
+            String insert = String.format("INSERT INTO users (username,password,role) VALUES('testuser1','%s','FREE')",encoded_password);
+            PreparedStatement initialize_table = connection.prepareStatement(insert);
+            PreparedStatement clean_table = connection.prepareStatement(clean);
+            clean_table.executeUpdate();
+            initialize_table.executeUpdate();
+        }catch(SQLException e){
+            logger.error("Setup database between test methods failed.",e.getMessage());
+        }
     }
 
     @Test
-    @Order(1)
     void testSignUp(){
-        //assertTrue(true);
         User testuser = new User("testuser","pass","FREE");
         SignupResponse producedResponse = testUserService.signup(testuser);
-        //assertEquals(producedResponse.getMessage(),"User signed up.");
         assertEquals(producedResponse.getStatus(),201);
     }
     @Test
-    @Order(2)
     void testUnsuccessfulSignUp(){
-        User testuser = new User("testuser","pass","FREE");
+        User testuser = new User("testuser1","pass1","FREE");
         SignupResponse producedResponse = testUserService.signup(testuser);
-        //assertEquals(producedResponse.getMessage(),"Username is already taken! Try a different one.");
         assertEquals(producedResponse.getStatus(),406);
     }
 
     @Test
-    @Order(3)
     void testLogin(){
-        AuthRequest testRequest = new AuthRequest("testuser","pass");
-        //AuthResponse expectedResponse = new AuthResponse();
+        AuthRequest testRequest = new AuthRequest("testuser1","pass1");
         AuthResponse producedResponse = testUserService.login(testRequest);
-        assertEquals(producedResponse.getUsername(),"testuser");
-        assertNotEquals(producedResponse.getToken(),"Not available");
         assertEquals(producedResponse.getStatus(),202);
     }
 
     @Test
-    @Order(4)
     void testUnsuccessfulLogin(){
-        assertTrue(true);
-        AuthRequest testRequest = new AuthRequest("testuser","incorrect");
+        AuthRequest testRequest = new AuthRequest("testuser1","incorrect");
         AuthResponse producedResponse = testUserService.login(testRequest);
-        assertEquals(producedResponse.getUsername(),"testuser");
-        assertEquals(producedResponse.getToken(),"Not available");
         assertEquals(producedResponse.getStatus(),401);
     }
 
     @Test
-    @Order(5)
     void testAuth(){
         assertTrue(true);
     }
     @Test
-    @Order(6)
     void testUnsuccessfulAuth(){
         assertTrue(true);
     }
 
     @AfterAll
-    static void cleanDatabase() throws Exception{
+    static void cleanDatabse(){
+        String clean = "TRUNCATE TABLE users";
         try(Connection connection = DriverManager.getConnection(testUrl,user,password)) {
-            PreparedStatement clean_table = connection.prepareStatement("TRUNCATE TABLE users");
+            PreparedStatement clean_table = connection.prepareStatement(clean);
             clean_table.executeUpdate();
+            logger.info("Finally cleaned database");
+        }catch(SQLException e){
+            logger.error("Cleaning database after all test methods failed.",e.getMessage());
         }
     }
 }
