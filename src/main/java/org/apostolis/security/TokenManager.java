@@ -4,5 +4,6 @@ import org.apostolis.model.Role;
 
 public interface TokenManager {
     String issueToken (String username, Role role);
-    boolean authorize (String token, String userId);
+    boolean validateToken (String token);
+    String extractRole(String token);
 }

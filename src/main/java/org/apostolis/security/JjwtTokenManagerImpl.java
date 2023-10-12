@@ -29,13 +29,16 @@ public class JjwtTokenManagerImpl implements TokenManager{
                 .compact();
     }
     @Override
-    public boolean authorize(String token, String username) {
+    public boolean validateToken(String token) {
         try {
-            String subject = Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token).getBody().getSubject();
             Date expiration = Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token).getBody().getExpiration();
-            return subject.equalsIgnoreCase(username) && expiration.before(new Date());
+            return expiration.before(new Date());
         } catch (Exception ex){
             throw new ForbiddenResponse();
         }
+    }
+
+    public String extractRole(String token){
+        return Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token).getBody().get("Role").toString();
     }
 }

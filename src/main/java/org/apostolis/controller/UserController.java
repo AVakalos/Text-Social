@@ -30,13 +30,12 @@ public class UserController {
         ctx.json(rsp);
     }
 
-    public void authorize (Context context){
-        String token = context.header("Authorization");
-        String username = context.header("X-User-ID");      // Check the headers in postman
+    public void authorize (Context ctx){
+        String token = ctx.header("Authorization").substring(7);
         if (token == null){
             throw new ForbiddenResponse();
         }
-        boolean result = userService.authorize(token, username);
+        boolean result = userService.authorize(token);
         if (!result){
             throw new ForbiddenResponse();
         }

@@ -25,7 +25,7 @@ public class UserServiceImpl implements UserService {
         this.passwordEncoder = passwordEncoder;
     }
 
-    public boolean checkPassword(String username, String password) {
+    private boolean checkPassword(String username, String password) {
         try {
             User user = repository.getByUsername(username);
             String hashed_password = user.getPassword();
@@ -78,7 +78,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public boolean authorize(String token, String username) {
-        return tokenManager.authorize(token, username);
+    public boolean authorize(String token) {
+        return tokenManager.validateToken(token);
     }
 }

@@ -33,7 +33,7 @@ public class UserRepositoryImpl implements UserRepository {
             dbUtils.doInTransaction(insertUserIntoDb);
             logger.info("User saved successfully in the database.");
         }catch (Exception e){
-            logger.error("User not saved.");
+            logger.error("User didn't saved.");
         }
     }
 

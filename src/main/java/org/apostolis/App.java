@@ -3,7 +3,6 @@ package org.apostolis;
 
 import io.javalin.Javalin;
 import org.apostolis.controller.UserController;
-import org.apostolis.model.Role;
 import org.apostolis.repository.DbUtils;
 import org.apostolis.repository.UserRepository;
 import org.apostolis.repository.UserRepositoryImpl;
@@ -13,7 +12,6 @@ import org.apostolis.security.PasswordEncoder;
 import org.apostolis.service.UserService;
 import org.apostolis.service.UserServiceImpl;
 
-import static io.javalin.apibuilder.ApiBuilder.*;
 
 public class App
 {
@@ -36,6 +34,4 @@ public class App
 
 
     }
-
-
 }
