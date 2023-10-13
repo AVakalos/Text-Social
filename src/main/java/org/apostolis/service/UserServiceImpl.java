@@ -78,7 +78,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public boolean authorize(String token) {
+    public boolean authenticate(String token) {
         return tokenManager.validateToken(token);
     }
 }

@@ -6,39 +6,59 @@ import java.util.concurrent.TimeUnit;
 
 
 import io.javalin.http.ForbiddenResponse;
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import org.apostolis.controller.UserController;
 import org.apostolis.model.Role;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class JjwtTokenManagerImpl implements TokenManager{
-    private static final long EXPIRE_AFTER_MINS = 30;
-    private final Key key;
+    private static final long EXPIRE_AFTER_MINS = 60;       // Debug
+
+    // Debugging
+    private final String SECRET = "sfdghtuhgruitjkkourijkldjlifgjdfuiryuytukhg";
+
+    //private final Key key;
+
+    private static final Logger logger = LoggerFactory.getLogger(JjwtTokenManagerImpl.class);
 
     public JjwtTokenManagerImpl(){
-        this.key = Keys.secretKeyFor(SignatureAlgorithm.HS256);
+
+        //this.key = Keys.secretKeyFor(SignatureAlgorithm.HS256);
     }
+
+    private Key getSignInKey() {
+        byte[] keyBytes = Decoders.BASE64.decode(SECRET);
+        return Keys.hmacShaKeyFor(keyBytes);
+    }
+
+
     @Override
     public String issueToken(String username, Role role) {
+        //logger.info("Key at issue: "+getSignInKey());
         return Jwts.builder()
                 .setSubject(username)
                 .claim("Role",role)
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + TimeUnit.MINUTES.toMillis(EXPIRE_AFTER_MINS)))
-                .signWith(key)
+                .signWith(getSignInKey())
                 .compact();
     }
     @Override
     public boolean validateToken(String token) {
         try {
-            Date expiration = Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token).getBody().getExpiration();
-            return expiration.before(new Date());
+            Date expiration = Jwts.parserBuilder().setSigningKey(getSignInKey()).build().parseClaimsJws(token).getBody().getExpiration();
+            return expiration.after(new Date());
         } catch (Exception ex){
-            throw new ForbiddenResponse();
+            throw new ForbiddenResponse("Token has expired");
         }
     }
 
-    public String extractRole(String token){
-        return Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token).getBody().get("Role").toString();
+    public Role extractRole(String token){
+        return Role.valueOf(Jwts.parserBuilder().setSigningKey(getSignInKey()).build().parseClaimsJws(token).getBody().get("Role").toString());
     }
 }

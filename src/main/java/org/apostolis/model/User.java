@@ -4,6 +4,7 @@ import java.util.Set;
 
 public class User {
 
+    private int id;
     private String username;
     private String password;
     private Role role;
@@ -28,4 +29,7 @@ public class User {
         this.role = role;
     }
 
+    public void setId(int id) {
+        this.id = id;
+    }
 }

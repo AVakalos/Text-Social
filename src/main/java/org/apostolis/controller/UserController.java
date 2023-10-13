@@ -6,11 +6,16 @@ import org.apostolis.model.AuthRequest;
 import org.apostolis.model.AuthResponse;
 import org.apostolis.model.SignupResponse;
 import org.apostolis.model.User;
+import org.apostolis.repository.UserRepositoryImpl;
 import org.apostolis.service.UserService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class UserController {
 
     private UserService userService;
+
+    private static final Logger logger = LoggerFactory.getLogger(UserController.class);
     public UserController(UserService userService){
         this.userService = userService;
     }
@@ -30,14 +35,20 @@ public class UserController {
         ctx.json(rsp);
     }
 
-    public void authorize (Context ctx){
-        String token = ctx.header("Authorization").substring(7);
-        if (token == null){
-            throw new ForbiddenResponse();
+    public void authenticate (Context ctx){
+        logger.info("Authenticate user");
+        String token = ctx.header("Authorization");
+        if (token != null){
+            token = token.substring(7);
+        }else{
+            logger.error("Token is missing from incoming request");
+            throw new ForbiddenResponse("Authentication token missing");
         }
-        boolean result = userService.authorize(token);
+        boolean result = userService.authenticate(token);
         if (!result){
-            throw new ForbiddenResponse();
+            logger.error("Token is invalid");
+            throw new ForbiddenResponse("Authentication token is invalid");
         }
+        logger.info("User authenticated");
     }
 }

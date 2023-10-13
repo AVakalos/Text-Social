@@ -8,5 +8,5 @@ import org.apostolis.model.User;
 public interface UserService {
     SignupResponse signup (User UserToSave);
     AuthResponse login (AuthRequest request);
-    boolean authorize (String token);
+    boolean authenticate(String token);
 }

@@ -1,5 +1,10 @@
 package org.apostolis.model;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+@JsonIgnoreProperties({ "id" })
 public class Comment {
     private int id;
 
@@ -9,7 +14,8 @@ public class Comment {
 
     private String text;
 
-    public Comment(int user, int post, String text) {
+    @JsonCreator
+    public Comment(@JsonProperty("user") int user, @JsonProperty("post") int post, @JsonProperty("text") String text) {
         this.user = user;
         this.post = post;
         this.text = text;
