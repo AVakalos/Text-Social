@@ -4,6 +4,7 @@ package org.apostolis;
 import io.javalin.Javalin;
 import org.apostolis.controller.OperationsController;
 import org.apostolis.controller.UserController;
+import org.apostolis.controller.ViewsController;
 import org.apostolis.repository.*;
 import org.apostolis.security.JjwtTokenManagerImpl;
 import org.apostolis.security.TokenManager;
@@ -30,6 +31,9 @@ public class App
         OperationsService operationsService= new OperationsServiceImpl(operationsRepository, tokenManager);
         OperationsController operationsController = new OperationsController(operationsService);
 
+        ViewsRepository viewsRepository = new ViewsRepositoryImpl(dbUtils);
+        ViewsController viewsController = new ViewsController(viewsRepository);
+
         Javalin app = Javalin.create().start(7777);
 
         app.post("/signup",userController::signup);
@@ -42,5 +46,11 @@ public class App
         app.delete("/api/unfollow",operationsController::unfollow);
 
 
+        app.get("api/user/{id}/followers/posts", viewsController::get_followers_posts);
+        app.get("/api/user/{id}/posts",viewsController::get_own_posts_with_last_100_comments);
+        app.get("api/user/{id}/posts/comments",viewsController::get_all_comments_on_posts);
+        app.get("api/user/{id}/latestcomments",viewsController::get_latest_comments_on_own_or_followers_posts);
+        app.get("api/user/{id}/followers",viewsController::get_followers_of);
+        app.get("api/user/{id}/tofollow",viewsController::get_users_to_follow);
     }
 }

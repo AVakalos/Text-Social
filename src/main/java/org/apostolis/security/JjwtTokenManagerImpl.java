@@ -6,12 +6,9 @@ import java.util.concurrent.TimeUnit;
 
 
 import io.javalin.http.ForbiddenResponse;
-import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
-import org.apostolis.controller.UserController;
 import org.apostolis.model.Role;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,7 +21,7 @@ public class JjwtTokenManagerImpl implements TokenManager{
 
     //private final Key key;
 
-    private static final Logger logger = LoggerFactory.getLogger(JjwtTokenManagerImpl.class);
+    //private static final Logger logger = LoggerFactory.getLogger(JjwtTokenManagerImpl.class);
 
     public JjwtTokenManagerImpl(){
 

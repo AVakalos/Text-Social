@@ -53,9 +53,10 @@ public class UserRepositoryImpl implements UserRepository {
                     rs.beforeFirst();
                     while(rs.next()){
                         user = new User(
-                                rs.getString("username"),
-                                rs.getString("password"),
-                                rs.getString("role"));
+                            rs.getString("username"),
+                            rs.getString("password"),
+                            rs.getString("role")
+                        );
                     }
                 }else{
                     //throw new UserNotFoundException("User: "+username+" is not in the database");

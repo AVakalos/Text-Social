@@ -15,9 +15,9 @@ public class UserServiceImpl implements UserService {
 
     private static final Logger logger = LoggerFactory.getLogger(UserServiceImpl.class);
 
-    private UserRepository repository;
-    private TokenManager tokenManager;
-    private PasswordEncoder passwordEncoder;
+    private final UserRepository repository;
+    private final TokenManager tokenManager;
+    private final PasswordEncoder passwordEncoder;
 
     public UserServiceImpl(UserRepository repository, TokenManager tokenManager, PasswordEncoder passwordEncoder){
         this.repository = repository;
