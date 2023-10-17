@@ -54,6 +54,7 @@ public class UserServiceImpl implements UserService {
         repository.save(UserToSave, passwordEncoder);
         response.setMessage("User signed up.");
         response.setStatus(201);
+        logger.info("User registered successfully");
         return response;
     }
 
@@ -74,6 +75,7 @@ public class UserServiceImpl implements UserService {
         }catch(Exception e){
             System.out.println(e.getMessage());
         }
+        logger.info("User signed in successfully");
         return response;
     }
 

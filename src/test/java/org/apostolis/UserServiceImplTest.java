@@ -48,15 +48,17 @@ public class UserServiceImplTest {
     @BeforeEach
     void setupDatabase(){
         try(Connection connection = DriverManager.getConnection(testUrl,user,password)) {
-            String clean = "TRUNCATE TABLE users";
+            String clean = "TRUNCATE TABLE users RESTART IDENTITY CASCADE";
             String encoded_password = testPasswordEncoder.encodePassword("pass1");
-            String insert = String.format("INSERT INTO users (username,password,role) VALUES('testuser1','%s','FREE')",encoded_password);
+            String insert = "INSERT INTO users (username,password,role) VALUES('testuser1',?,'FREE')";
             PreparedStatement initialize_table = connection.prepareStatement(insert);
+            initialize_table.setString(1, encoded_password);
             PreparedStatement clean_table = connection.prepareStatement(clean);
             clean_table.executeUpdate();
             initialize_table.executeUpdate();
         }catch(SQLException e){
-            logger.error("Setup database between test methods failed.",e.getMessage());
+            logger.error("Setup database between test methods failed.");
+            throw new RuntimeException(e.getMessage());
         }
     }
 
@@ -96,15 +98,16 @@ public class UserServiceImplTest {
         assertTrue(true);
     }
 
-    @AfterAll
-    static void cleanDatabse(){
-        String clean = "TRUNCATE TABLE users";
-        try(Connection connection = DriverManager.getConnection(testUrl,user,password)) {
-            PreparedStatement clean_table = connection.prepareStatement(clean);
-            clean_table.executeUpdate();
-            logger.info("Finally cleaned database");
-        }catch(SQLException e){
-            logger.error("Cleaning database after all test methods failed.",e.getMessage());
-        }
-    }
+//    @AfterAll
+//    static void cleanDatabse(){
+//        String clean = "TRUNCATE TABLE users RESTART IDENTITY CASCADE";
+//        try(Connection connection = DriverManager.getConnection(testUrl,user,password)) {
+//            PreparedStatement clean_table = connection.prepareStatement(clean);
+//            clean_table.executeUpdate();
+//            logger.info("Finally cleaned database");
+//        }catch(SQLException e){
+//            logger.error("Cleaning database after all test methods failed.");
+//            throw new RuntimeException(e.getMessage());
+//        }
+//    }
 }

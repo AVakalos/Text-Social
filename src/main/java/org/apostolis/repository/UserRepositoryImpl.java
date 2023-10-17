@@ -34,11 +34,12 @@ public class UserRepositoryImpl implements UserRepository {
             logger.info("User saved successfully in the database.");
         }catch (Exception e){
             logger.error("User didn't saved.");
+            throw new RuntimeException(e.getMessage());
         }
     }
 
     @Override
-    public User getByUsername(String username) throws Exception {
+    public User getByUsername(String username) {
 
         DbUtils.ThrowingFunction<Connection, User, Exception> retrieveUser = (conn) -> {
             try(PreparedStatement retrieve_stm = conn.prepareStatement(
@@ -65,6 +66,11 @@ public class UserRepositoryImpl implements UserRepository {
                 return user;
             }
         };
-        return dbUtils.doInTransaction(retrieveUser);
+        try {
+            return dbUtils.doInTransaction(retrieveUser);
+        }catch(Exception e){
+            logger.error("User could not be retrieved");
+            throw new RuntimeException(e.getMessage());
+        }
     }
 }

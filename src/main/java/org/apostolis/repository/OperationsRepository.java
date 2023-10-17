@@ -11,4 +11,6 @@ public interface OperationsRepository {
     void saveFollow(int follower,int to_follow);
 
     void deleteFollow(int follower, int to_unfollow);
+
+    DbUtils getConnection();
 }

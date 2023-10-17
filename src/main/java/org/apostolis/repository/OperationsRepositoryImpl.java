@@ -37,6 +37,7 @@ public class OperationsRepositoryImpl implements OperationsRepository {
             logger.info("Post saved successfully in the database.");
         }catch (Exception e){
             logger.error("Post didn't saved.");
+            throw new RuntimeException(e.getMessage());
         }
     }
 
@@ -57,6 +58,7 @@ public class OperationsRepositoryImpl implements OperationsRepository {
             logger.info("Comment saved successfully in the database.");
         }catch (Exception e){
             logger.error("Comment didn't saved.");
+            throw new RuntimeException(e.getMessage());
         }
     }
 
@@ -74,6 +76,7 @@ public class OperationsRepositoryImpl implements OperationsRepository {
             logger.info("Follow saved successfully in the database.");
         }catch (Exception e){
             logger.error("Follow didn't saved.");
+            throw new RuntimeException(e.getMessage());
         }
     }
 
@@ -81,7 +84,7 @@ public class OperationsRepositoryImpl implements OperationsRepository {
     public void deleteFollow(int follower, int to_unfollow) {
         DbUtils.ThrowingConsumer<Connection,Exception> deleteFollowerFromDb = (conn) -> {
             try(PreparedStatement delete_follower_stm = conn.prepareStatement(
-                    "DELETE FROM followers WHERE user_id=? AND follower_id=?")){
+                    "DELETE FROM followers WHERE user_id = ? AND follower_id=?")){
                 delete_follower_stm.setInt(1,follower);
                 delete_follower_stm.setInt(2,to_unfollow);
                 delete_follower_stm.executeUpdate();
@@ -92,6 +95,12 @@ public class OperationsRepositoryImpl implements OperationsRepository {
             logger.info("Follow deleted successfully from database.");
         }catch (Exception e){
             logger.error("Follow didn't deleted.");
+            throw new RuntimeException(e.getMessage());
         }
+    }
+
+    @Override
+    public DbUtils getConnection() {
+        return dbUtils;
     }
 }
