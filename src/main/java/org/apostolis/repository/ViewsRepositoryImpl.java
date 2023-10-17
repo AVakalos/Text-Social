@@ -55,7 +55,7 @@ public class ViewsRepositoryImpl implements ViewsRepository{
     }
 
     @Override
-    public HashMap<String, ArrayList<String>> get_own_posts_with_last_100_comments(int id) {
+    public HashMap<String, ArrayList<String>> get_own_posts_with_last_n_comments(int id, int max_latest_comments) {
         DbUtils.ThrowingFunction<Connection, HashMap<String, ArrayList<String>>, Exception> get_posts_with_comments = (conn) -> {
             String query = "WITH numbered_comments AS" +
                     "    (SELECT *, " +
@@ -68,7 +68,7 @@ public class ViewsRepositoryImpl implements ViewsRepository{
                     "last_n_comments AS ( " +
                     "    SELECT * " +
                     "    FROM numbered_comments " +
-                    "    WHERE numbered_comments.row_number <= 100 " +
+                    "    WHERE numbered_comments.row_number <= ? " +
                     "), " +
                     "user_posts AS( " +
                     "    SELECT * FROM " +
@@ -83,6 +83,7 @@ public class ViewsRepositoryImpl implements ViewsRepository{
             HashMap<String, ArrayList<String>> results = new LinkedHashMap<>();
             try(PreparedStatement pst = conn.prepareStatement(query)){
                 pst.setInt(1,id);
+                pst.setInt(2, max_latest_comments);
                 ResultSet rs = pst.executeQuery();
                 while(rs.next()){
                     String post = rs.getString("post");

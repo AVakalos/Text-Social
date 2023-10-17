@@ -25,7 +25,7 @@ public class ViewsController {
     }
     public void get_own_posts_with_last_100_comments(Context ctx){
         int user = Integer.parseInt(ctx.pathParam("id"));
-        HashMap<String, ArrayList<String>> results = viewsRepository.get_own_posts_with_last_100_comments(user);
+        HashMap<String, ArrayList<String>> results = viewsRepository.get_own_posts_with_last_n_comments(user, 100);
         if(results == null || results.isEmpty()){
             ctx.result("There are no posts");
         }else{
