@@ -1,6 +1,7 @@
 package org.apostolis.controller;
 
 import io.javalin.http.Context;
+import io.javalin.http.NotFoundResponse;
 import org.apostolis.model.Comment;
 import org.apostolis.model.Post;
 import org.apostolis.service.OperationsService;
@@ -50,6 +51,20 @@ public class OperationsController {
         }catch(NullPointerException e){
             ctx.status(500);
             ctx.result("Query params are null");
+        }
+    }
+
+    public void create_url_for_post(Context ctx) {
+        int user = Integer.parseInt(Objects.requireNonNull(ctx.pathParam("id")));
+        int post = Integer.parseInt(Objects.requireNonNull(ctx.pathParam("post")));
+        ctx.result(operationsService.create_url_for_post_and_comments(user, post));
+    }
+
+    public void decode_url(Context ctx) {
+        try{
+            ctx.result(operationsService.decode_url(ctx.url()));
+        }catch (Exception e){
+            throw new NotFoundResponse();
         }
     }
 }

@@ -13,13 +13,18 @@ import org.apostolis.security.TokenManager;
 import org.apostolis.service.UserService;
 import org.apostolis.service.UserServiceImpl;
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.apostolis.model.Role;
 
 import java.sql.*;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.spy;
 
+@ExtendWith(MockitoExtension.class)
 public class UserServiceImplTest {
     private static DbUtils testDbUtils;
 
@@ -43,6 +48,19 @@ public class UserServiceImplTest {
         testPasswordEncoder = new PasswordEncoder();
         testUserService = new UserServiceImpl(testUserRepository, testTokenManager,testPasswordEncoder);
         logger.info("Initial setup of test");
+    }
+
+    @AfterAll
+    static void cleanDatabse(){
+        String clean = "TRUNCATE TABLE users RESTART IDENTITY CASCADE";
+        try(Connection connection = DriverManager.getConnection(testUrl,user,password)) {
+            PreparedStatement clean_table = connection.prepareStatement(clean);
+            clean_table.executeUpdate();
+            logger.info("Finally cleaned database");
+        }catch(SQLException e){
+            logger.error("Cleaning database after all test methods failed.");
+            throw new RuntimeException(e.getMessage());
+        }
     }
 
     @BeforeEach
@@ -91,23 +109,14 @@ public class UserServiceImplTest {
 
     @Test
     void testAuth(){
-        assertTrue(true);
+        String token = testTokenManager.issueToken("testuser1",Role.valueOf("FREE"));
+        assertTrue(testTokenManager.validateToken(token));
     }
     @Test
     void testUnsuccessfulAuth(){
-        assertTrue(true);
+        String token = testTokenManager.issueToken("testuser1",Role.valueOf("FREE"));
+        String InvalidToken = token += "sdd";
+        assertThrows(Exception.class, () -> testTokenManager.validateToken(InvalidToken));
     }
 
-//    @AfterAll
-//    static void cleanDatabse(){
-//        String clean = "TRUNCATE TABLE users RESTART IDENTITY CASCADE";
-//        try(Connection connection = DriverManager.getConnection(testUrl,user,password)) {
-//            PreparedStatement clean_table = connection.prepareStatement(clean);
-//            clean_table.executeUpdate();
-//            logger.info("Finally cleaned database");
-//        }catch(SQLException e){
-//            logger.error("Cleaning database after all test methods failed.");
-//            throw new RuntimeException(e.getMessage());
-//        }
-//    }
 }

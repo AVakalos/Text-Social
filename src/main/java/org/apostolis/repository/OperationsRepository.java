@@ -3,6 +3,9 @@ package org.apostolis.repository;
 import org.apostolis.model.Comment;
 import org.apostolis.model.Post;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+
 public interface OperationsRepository {
     void savePost(Post postToSave);
 
@@ -12,5 +15,7 @@ public interface OperationsRepository {
 
     void deleteFollow(int follower, int to_unfollow);
 
-    DbUtils getConnection();
+    int getCountOfUserCommentsUnderThisPost(int user, int post);
+
+    HashMap<String, ArrayList<String>> getPostAndNLatestComments(int post_id, int latest);
 }

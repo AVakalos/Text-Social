@@ -14,5 +14,7 @@ public interface OperationsService {
 
     void unfollow(int follower, int to_unfollow);
 
-    //Role check_Authorization(String token);
+    String create_url_for_post_and_comments(int user, int post);
+
+    String decode_url(String url);
 }

@@ -20,7 +20,7 @@ public class ViewsRepositoryImpl implements ViewsRepository{
     }
 
     @Override
-    public HashMap<String, ArrayList<String>> get_followers_posts(int id) {
+    public HashMap<String, ArrayList<String>> get_followers_posts_in_reverse_chrono(int id) {
         DbUtils.ThrowingFunction<Connection, HashMap<String, ArrayList<String>>, Exception> get_followers_posts = (conn) -> {
             String query = "SELECT username, text FROM " +
                         "    users u " +
@@ -55,7 +55,7 @@ public class ViewsRepositoryImpl implements ViewsRepository{
     }
 
     @Override
-    public HashMap<String, ArrayList<String>> get_own_posts_with_last_n_comments(int id, int max_latest_comments) {
+    public HashMap<String, ArrayList<String>> get_own_posts_with_last_n_comments_in_reverse_chrono(int id, int max_latest_comments) {
         DbUtils.ThrowingFunction<Connection, HashMap<String, ArrayList<String>>, Exception> get_posts_with_comments = (conn) -> {
             String query = "WITH numbered_comments AS" +
                     "    (SELECT *, " +
@@ -82,8 +82,8 @@ public class ViewsRepositoryImpl implements ViewsRepository{
                     "ORDER BY p.created DESC";
             HashMap<String, ArrayList<String>> results = new LinkedHashMap<>();
             try(PreparedStatement pst = conn.prepareStatement(query)){
-                pst.setInt(1,id);
-                pst.setInt(2, max_latest_comments);
+                pst.setInt(1, max_latest_comments);
+                pst.setInt(2, id);
                 ResultSet rs = pst.executeQuery();
                 while(rs.next()){
                     String post = rs.getString("post");
@@ -92,7 +92,7 @@ public class ViewsRepositoryImpl implements ViewsRepository{
                     }
                     String comment = rs.getString("comment");
                     if(comment!=null){
-                        results.get(post).add(0,comment);
+                        results.get(post).add(comment);
                     }
                 }
                 return results;
@@ -107,7 +107,7 @@ public class ViewsRepositoryImpl implements ViewsRepository{
     }
 
     @Override
-    public ArrayList<String> get_all_comments_on_posts(int id) {
+    public ArrayList<String> get_all_comments_on_own_posts(int id) {
         DbUtils.ThrowingFunction<Connection, ArrayList<String>, Exception> get_all_comments = (conn) -> {
             String query = "SELECT c.text AS comment " +
                             "FROM comments AS c " +

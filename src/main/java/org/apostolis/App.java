@@ -28,7 +28,8 @@ public class App
         UserController userController = new UserController(userService);
 
         OperationsRepository operationsRepository = new OperationsRepositoryImpl(dbUtils);
-        OperationsService operationsService= new OperationsServiceImpl(operationsRepository, tokenManager);
+        OperationsService operationsService= new OperationsServiceImpl(
+                operationsRepository, tokenManager, 1000, 3000, 5);
         OperationsController operationsController = new OperationsController(operationsService);
 
         ViewsRepository viewsRepository = new ViewsRepositoryImpl(dbUtils);
@@ -44,13 +45,17 @@ public class App
         app.post("/api/newcomment",operationsController::create_comment);
         app.post("/api/follow",operationsController::follow);
         app.delete("/api/unfollow",operationsController::unfollow);
+        app.get("/api/user/{id}/createurl/{post}",operationsController::create_url_for_post);
 
 
-        app.get("api/user/{id}/followers/posts", viewsController::get_followers_posts);
-        app.get("/api/user/{id}/posts",viewsController::get_own_posts_with_last_100_comments);
-        app.get("api/user/{id}/posts/comments",viewsController::get_all_comments_on_posts);
+        app.get("api/user/{id}/followers/posts", viewsController::get_followers_posts_in_reverse_chrono);
+        app.get("api/user/{id}/posts",viewsController::get_own_posts_with_last_100_comments_in_reverse_chrono);
+        app.get("api/user/{id}/posts/comments",viewsController::get_all_comments_on_own_posts);
         app.get("api/user/{id}/latestcomments",viewsController::get_latest_comments_on_own_or_followers_posts);
         app.get("api/user/{id}/followers",viewsController::get_followers_of);
         app.get("api/user/{id}/tofollow",viewsController::get_users_to_follow);
+
+        app.get("<url>",operationsController::decode_url);
+
     }
 }

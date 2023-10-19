@@ -1,7 +1,6 @@
 package org.apostolis;
 
 import org.apostolis.repository.*;
-import org.apostolis.security.TokenManager;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -16,10 +15,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class ViewsTest {
     private static DbUtils testDbUtils;
-    private static TokenManager testTokenManager;
-
     private static ViewsRepository testViewsRepository;
-
     private static final String testUrl = "jdbc:postgresql://localhost:5433/TextSocialTest";
     private static final String user = "postgres";
     private static final String password = "1234";
@@ -46,26 +42,31 @@ public class ViewsTest {
             PreparedStatement insert_users_stm = connection.prepareStatement(insert_users);
             insert_users_stm.executeUpdate();
 
-            // Populate posts table
+            // Populate posts table (post_id is autoincrement 1,2,3,4 accordingly)
             String insert_posts = "INSERT INTO posts (user_id, text, created) VALUES " +
-                                        "(1,'1post1',?)," +
-                                        "(1,'1post2',?)," +
-                                        "(2,'2post1',?)," +
-                                        "(3,'3post1',?)";
+                                        "(1,'post1 from user1',?)," +
+                                        "(1,'post2 from user1',?)," +
+                                        "(2,'post1 from user2',?)," +
+                                        "(3,'post1 from user3',?)";
             PreparedStatement insert_posts_stm = connection.prepareStatement(insert_posts);
             for(int i=1; i<=4; i++){
-                insert_posts_stm.setTimestamp(i, new Timestamp(System.currentTimeMillis()));
+                insert_posts_stm.setTimestamp(i, Timestamp.from(
+                        new Timestamp(System.currentTimeMillis()).toInstant().plusSeconds(i*30)));
             }
             insert_posts_stm.executeUpdate();
 
             // Populate comments table
             String insert_comments = "INSERT INTO comments (post_id,user_id,text,created) VALUES" +
-                                        "(1,2,'from user2',?)," +
-                                        "(2,1,'from user1',?)," +
-                                        "(3,1,'from user1',?)";
+                                        "(1,2,'com1 from user2',?)," +
+                                        "(2,1,'com1 from user1',?)," +
+                                        "(3,1,'com1 from user1',?)," +
+                                        "(1,3,'com2 from user3',?),"+
+                                        "(2,2,'com2 from user2',?),"+
+                                        "(2,3,'com3 from user3',?)";
             PreparedStatement insert_comments_stm = connection.prepareStatement(insert_comments);
-            for(int i=1; i<=3; i++){
-                insert_comments_stm.setTimestamp(i, new Timestamp(System.currentTimeMillis()));
+            for(int i=1; i<=6; i++){
+                insert_comments_stm.setTimestamp(i, Timestamp.from(
+                        new Timestamp(System.currentTimeMillis()).toInstant().plusSeconds(120 + i*30)));
             }
             insert_comments_stm.executeUpdate();
 
@@ -80,43 +81,64 @@ public class ViewsTest {
         }
     }
 
-    private void printA(HashMap<String, ArrayList<String>> results){
-        for(String key: results.keySet()){
-            System.out.print(key+": ");
-            for(String s: results.get(key)){
-                System.out.print(s+", ");
-            }
-            System.out.println("\n");
+    @AfterAll
+    static void clean_database(){
+        try(Connection connection = DriverManager.getConnection(testUrl,user,password)) {
+            PreparedStatement clean_stm = connection.prepareStatement(
+                    "TRUNCATE TABLE users,comments, posts, followers RESTART IDENTITY CASCADE");
+            clean_stm.executeUpdate();
+            logger.info("Cleaned Database");
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
         }
     }
+
     @Test
-    void get_followers_posts(){
-        HashMap<String, ArrayList<String>> results = testViewsRepository.get_followers_posts(2);
+    void get_followers_posts_in_reverse_chrono(){
+        HashMap<String, ArrayList<String>> results = testViewsRepository.get_followers_posts_in_reverse_chrono(2);
+        ArrayList<String> posts_from_first_follower = results.get("user1");
+        ArrayList<String> posts_from_second_follower = results.get("user3");
+
         assertEquals(2, results.keySet().size());
         assertEquals(2, results.get("user1").size());
         assertEquals(1, results.get("user3").size());
+        assertEquals("post2 from user1",posts_from_first_follower.get(0));
+        assertEquals("post1 from user1",posts_from_first_follower.get(1));
+        assertEquals("post1 from user3",posts_from_second_follower.get(0));
+
     }
 
     @Test
-    void get_own_posts_with_last_100_comments(){
-        HashMap<String,ArrayList<String>> results = testViewsRepository.get_own_posts_with_last_n_comments(2,2);
-        //printA(results);
-        assertEquals(1,results.keySet().size());
-        assertEquals(1,results.get("2post1").size());
-        // Check if comments returned is > 2 or insert 2 comments and see take the 2 latest
+    void get_own_posts_with_last_n_comments_in_reverse_chrono(){
+        HashMap<String,ArrayList<String>> results =
+                testViewsRepository.get_own_posts_with_last_n_comments_in_reverse_chrono(1,2);
+
+        ArrayList<String> post1_comments = results.get("post1 from user1");
+        ArrayList<String> post2_comments = results.get("post2 from user1");
+
+        assertEquals(2,results.keySet().size());
+        assertEquals(2,post1_comments.size());
+        assertEquals(2,post2_comments.size());
+
+        assertEquals("com2 from user3", post1_comments.get(0));
+        assertEquals("com1 from user2", post1_comments.get(1));
+        assertEquals("com3 from user3", post2_comments.get(0));
+        assertEquals("com2 from user2", post2_comments.get(1));
     }
 
     @Test
-    void get_all_comments_on_posts(){
-        ArrayList<String> results = testViewsRepository.get_all_comments_on_posts(1);
-        assertEquals(2,results.size());
+    void get_all_comments_on_own_posts(){
+        ArrayList<String> results = testViewsRepository.get_all_comments_on_own_posts(1);
+        assertEquals(5,results.size());
     }
 
     @Test
     void get_latest_comments_on_own_or_followers_posts(){
-        HashMap<String, String> results = testViewsRepository.get_latest_comments_on_own_or_followers_posts(2);
+        HashMap<String, String> results = testViewsRepository.get_latest_comments_on_own_or_followers_posts(1);
         assertEquals(3,results.keySet().size());
-        // test if the comment is actually the latest (insert a comment to all followers and own posts and assert it)
+        assertEquals("com2 from user3",results.get("post1 from user1"));
+        assertEquals("com3 from user3",results.get("post2 from user1"));
+        assertEquals("com1 from user1", results.get("post1 from user2"));
     }
 
     @Test
@@ -135,17 +157,4 @@ public class ViewsTest {
         ArrayList<String> results = testViewsRepository.get_users_to_follow(2);
         assertEquals(0,results.size());
     }
-
-    @AfterAll
-    static void clean_database(){
-        try(Connection connection = DriverManager.getConnection(testUrl,user,password)) {
-            PreparedStatement clean_stm = connection.prepareStatement(
-                    "TRUNCATE TABLE users,comments, posts, followers RESTART IDENTITY CASCADE");
-            clean_stm.executeUpdate();
-            logger.info("Cleaned Database");
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
 }

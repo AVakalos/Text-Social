@@ -4,31 +4,30 @@ import io.javalin.http.UnauthorizedResponse;
 import org.apostolis.model.Comment;
 import org.apostolis.model.Post;
 import org.apostolis.model.Role;
-import org.apostolis.repository.DbUtils;
 import org.apostolis.repository.OperationsRepository;
 import org.apostolis.security.TokenManager;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.HashMap;
 
 public class OperationsServiceImpl implements OperationsService{
 
-    private int free_post_size = 1000;
-    private int premium_post_size = 3000;
-    private int max_comments_number = 5;
+    private final int free_post_size;
+    private final int premium_post_size;
+    private final int max_comments_number;
 
     private static final Logger logger = LoggerFactory.getLogger(OperationsServiceImpl.class);
 
     private final OperationsRepository operationsRepository;
     private final TokenManager tokenManager;
-
-    public OperationsServiceImpl(OperationsRepository operationsRepository, TokenManager tokenManager) {
-        this.operationsRepository = operationsRepository;
-        this.tokenManager = tokenManager;
-    }
 
     public OperationsServiceImpl(OperationsRepository operationsRepository,
                                  TokenManager tokenManager,
@@ -45,7 +44,7 @@ public class OperationsServiceImpl implements OperationsService{
 
     @Override
     public void create_post(Post postToSave, String token) {
-        Role authlevel = check_Authorization(token);
+        Role authlevel = tokenManager.extractRole(token);
         int post_size = postToSave.getText().length();
         switch (authlevel){
             case FREE:
@@ -69,32 +68,10 @@ public class OperationsServiceImpl implements OperationsService{
     @Override
     public void create_comment(Comment commentToSave, String token) {
 
-        Role authlevel = check_Authorization(token);
-        int comments_count = -1;
-        if(authlevel.equals(Role.FREE)){
-            DbUtils.ThrowingFunction<Connection, Integer, Exception> get_comments_count = (conn) -> {
-                int count = -1;
-                try(PreparedStatement stm = conn.prepareStatement(
-                        "SELECT COUNT(*) FROM comments WHERE post_id=? and user_id=?")){
-                    stm.setInt(1,commentToSave.getPost());
-                    stm.setInt(2,commentToSave.getUser());
-                    System.out.println(stm);
-                    ResultSet rs = stm.executeQuery();
+        if(tokenManager.extractRole(token).equals(Role.FREE)){
+            int comments_count = operationsRepository.getCountOfUserCommentsUnderThisPost(
+                    commentToSave.getUser(), commentToSave.getPost());
 
-                    while(rs.next()){
-                        count = rs.getInt("count");
-                        System.out.println(count);
-                    }
-                }
-                return count;
-            };
-            try{
-                comments_count = operationsRepository.getConnection().doInTransaction(get_comments_count);
-                logger.info(String.valueOf(comments_count));
-            }catch(Exception e){
-                logger.error("Could not retrieve the comments count from database");
-                throw new RuntimeException(e.getMessage());
-            }
             if(comments_count >= max_comments_number){
                 throw new UnauthorizedResponse("Free users can comment up to "+ max_comments_number +" times per post."+
                         "\nYou reached the maximum number of comments for this post.");
@@ -117,8 +94,31 @@ public class OperationsServiceImpl implements OperationsService{
         operationsRepository.deleteFollow(follower, to_unfollow);
     }
 
-    private Role check_Authorization(String token){
-        return tokenManager.extractRole(token);
-    }
 
+    @Override
+    public String create_url_for_post_and_comments(int user, int post) {
+        try{
+            String description = user+","+post;
+            return "http://localhost:7777/"+URLEncoder.encode(description, StandardCharsets.UTF_8.toString());
+        }catch(UnsupportedEncodingException e){
+            throw new RuntimeException(e.getMessage());
+        }
+
+    }
+    @Override
+    public String decode_url(String url) {
+        try{
+            String encoded = url.replace("http://localhost:7777/","");
+            String decoded = URLDecoder.decode(encoded, StandardCharsets.UTF_8.toString());
+
+            int post_id = Integer.parseInt(decoded.split(",")[1]);
+
+            HashMap<String, ArrayList<String>> post_and_comments = operationsRepository.getPostAndNLatestComments(post_id, 100);
+            JSONObject jsonResults = new JSONObject(post_and_comments);
+            return jsonResults.toString();
+
+        }catch(UnsupportedEncodingException e){
+            throw new RuntimeException(e.getMessage());
+        }
+    }
 }

@@ -14,27 +14,28 @@ public class ViewsController {
         this.viewsRepository = viewsRepository;
     }
 
-    public void get_followers_posts(Context ctx){
+    public void get_followers_posts_in_reverse_chrono(Context ctx){
         int user = Integer.parseInt(ctx.pathParam("id"));
-        HashMap<String, ArrayList<String>> results = viewsRepository.get_followers_posts(user);
+        HashMap<String, ArrayList<String>> results = viewsRepository.get_followers_posts_in_reverse_chrono(user);
         if(results == null || results.isEmpty()){
             ctx.result("There are no posts from followers or followers doesn't exist");
         }else{
             ctx.json(results);
         }
     }
-    public void get_own_posts_with_last_100_comments(Context ctx){
+    public void get_own_posts_with_last_100_comments_in_reverse_chrono(Context ctx){
         int user = Integer.parseInt(ctx.pathParam("id"));
-        HashMap<String, ArrayList<String>> results = viewsRepository.get_own_posts_with_last_n_comments(user, 100);
+        HashMap<String, ArrayList<String>> results =
+                viewsRepository.get_own_posts_with_last_n_comments_in_reverse_chrono(user, 100);
         if(results == null || results.isEmpty()){
             ctx.result("There are no posts");
         }else{
             ctx.json(results);
         }
     }
-    public void get_all_comments_on_posts(Context ctx){
+    public void get_all_comments_on_own_posts(Context ctx){
         int user = Integer.parseInt(ctx.pathParam("id"));
-        ArrayList<String> results = viewsRepository.get_all_comments_on_posts(user);
+        ArrayList<String> results = viewsRepository.get_all_comments_on_own_posts(user);
         if(results == null || results.isEmpty()){
             ctx.result("There are no comments in any post");
         }else{

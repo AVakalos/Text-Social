@@ -24,7 +24,6 @@ public class JjwtTokenManagerImpl implements TokenManager{
     //private static final Logger logger = LoggerFactory.getLogger(JjwtTokenManagerImpl.class);
 
     public JjwtTokenManagerImpl(){
-
         //this.key = Keys.secretKeyFor(SignatureAlgorithm.HS256);
     }
 
@@ -51,7 +50,7 @@ public class JjwtTokenManagerImpl implements TokenManager{
             Date expiration = Jwts.parserBuilder().setSigningKey(getSignInKey()).build().parseClaimsJws(token).getBody().getExpiration();
             return expiration.after(new Date());
         } catch (Exception ex){
-            throw new ForbiddenResponse("Token has expired");
+            throw new ForbiddenResponse("Token has expired or is invalid");
         }
     }
 

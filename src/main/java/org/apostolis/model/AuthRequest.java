@@ -1,13 +1,8 @@
 package org.apostolis.model;
 
-import me.geso.tinyvalidator.constraints.Email;
-import me.geso.tinyvalidator.constraints.Size;
-
 public class AuthRequest {
-    @Email
     private String username;
 
-    @Size(min = 8)
     private String password;
 
     public AuthRequest(){ }

@@ -7,7 +7,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonIgnoreProperties({ "id" })
 public class Post {
-    private int id;
     private int user;
     private String text;
 
@@ -31,9 +30,5 @@ public class Post {
 
     public void setText(String text) {
         this.text = text;
-    }
-
-    public int getId() {
-        return id;
     }
 }

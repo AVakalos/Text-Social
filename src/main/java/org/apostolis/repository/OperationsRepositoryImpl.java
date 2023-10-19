@@ -5,9 +5,14 @@ import org.apostolis.model.Post;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.xml.transform.Result;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 
 
 public class OperationsRepositoryImpl implements OperationsRepository {
@@ -40,6 +45,70 @@ public class OperationsRepositoryImpl implements OperationsRepository {
             throw new RuntimeException(e.getMessage());
         }
     }
+
+    @Override
+    public int getCountOfUserCommentsUnderThisPost(int user, int post){
+        int comments_count;
+        DbUtils.ThrowingFunction<Connection, Integer, Exception> get_comments_count = (conn) -> {
+            int count;
+            try(PreparedStatement stm = conn.prepareStatement(
+                    "SELECT COUNT(*) FROM comments WHERE post_id=? and user_id=?")){
+                stm.setInt(1, post);
+                stm.setInt(2, user);
+                ResultSet rs = stm.executeQuery();
+                rs.next();
+                count = rs.getInt("count");
+            }
+            return count;
+        };
+        try{
+            comments_count = dbUtils.doInTransaction(get_comments_count);
+            logger.info(String.valueOf(comments_count));
+        }catch(Exception e){
+            logger.error("Could not retrieve the comments count from database");
+            throw new RuntimeException(e.getMessage());
+        }
+        return comments_count;
+    }
+
+    @Override
+    public HashMap<String, ArrayList<String>> getPostAndNLatestComments(int post_id, int latest) {
+        DbUtils.ThrowingFunction<Connection, HashMap<String,ArrayList<String>>, Exception> get_post_and_n_latest_comments = (conn) -> {
+            String query = "WITH latest_comments AS(\n" +
+                            "\tSELECT * FROM\n" +
+                            "\tcomments\n" +
+                            "\tWHERE post_id = ?\n" +
+                            "\tORDER BY created DESC\n" +
+                            "\tLIMIT ?\n" +
+                            ")\n" +
+                            "SELECT p.text AS post, c.text AS comments\n" +
+                            "FROM posts p JOIN latest_comments c\n" +
+                            "ON p.post_id = c.post_id";
+
+            HashMap<String,ArrayList<String>> results = new LinkedHashMap<>();
+            try(PreparedStatement stm = conn.prepareStatement(query)){
+                stm.setInt(1,post_id);
+                stm.setInt(2,latest);
+                ResultSet rs = stm.executeQuery();
+                while(rs.next()){
+                    String post = rs.getString("post");
+                    String comment = rs.getString("comments");
+                    if (!results.containsKey(post)){
+                        results.put(post, new ArrayList<>());
+                    }
+                    results.get(post).add(comment);
+                }
+            }
+            return results;
+        };
+        try{
+            return dbUtils.doInTransaction(get_post_and_n_latest_comments);
+        }catch(Exception e){
+            logger.error("Post "+post_id+" and latest "+latest+" comments could not be retrieved");
+            throw new RuntimeException(e.getMessage());
+        }
+    }
+
 
     @Override
     public void saveComment(Comment commentToSave) {
@@ -97,10 +166,5 @@ public class OperationsRepositoryImpl implements OperationsRepository {
             logger.error("Follow didn't deleted.");
             throw new RuntimeException(e.getMessage());
         }
-    }
-
-    @Override
-    public DbUtils getConnection() {
-        return dbUtils;
     }
 }
