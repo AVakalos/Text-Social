@@ -9,10 +9,7 @@ import org.apostolis.repository.*;
 import org.apostolis.security.JjwtTokenManagerImpl;
 import org.apostolis.security.TokenManager;
 import org.apostolis.security.PasswordEncoder;
-import org.apostolis.service.OperationsService;
-import org.apostolis.service.OperationsServiceImpl;
-import org.apostolis.service.UserService;
-import org.apostolis.service.UserServiceImpl;
+import org.apostolis.service.*;
 
 
 public class App
@@ -30,10 +27,12 @@ public class App
         OperationsRepository operationsRepository = new OperationsRepositoryImpl(dbUtils);
         OperationsService operationsService= new OperationsServiceImpl(
                 operationsRepository, tokenManager, 1000, 3000, 5);
-        OperationsController operationsController = new OperationsController(operationsService);
+
+        RequestValidationService requestValidationService = new RequestValidationServiceImpl(tokenManager, userRepository, operationsRepository);
+        OperationsController operationsController = new OperationsController(operationsService, requestValidationService);
 
         ViewsRepository viewsRepository = new ViewsRepositoryImpl(dbUtils);
-        ViewsController viewsController = new ViewsController(viewsRepository);
+        ViewsController viewsController = new ViewsController(viewsRepository, requestValidationService);
 
         Javalin app = Javalin.create().start(7777);
 
@@ -41,21 +40,21 @@ public class App
         app.post("/signin",userController::login);
 
         app.before("/api/*", userController::authenticate);
-        app.post("/api/newpost",operationsController::create_post);
-        app.post("/api/newcomment",operationsController::create_comment);
+        app.post("/api/newpost",operationsController::createPost);
+        app.post("/api/newcomment",operationsController::createComment);
         app.post("/api/follow",operationsController::follow);
         app.delete("/api/unfollow",operationsController::unfollow);
-        app.get("/api/user/{id}/createurl/{post}",operationsController::create_url_for_post);
+        app.get("/api/user/{id}/createurl/{post}",operationsController::createUrlForPostAndComments);
 
 
-        app.get("api/user/{id}/followers/posts", viewsController::get_followers_posts_in_reverse_chrono);
-        app.get("api/user/{id}/posts",viewsController::get_own_posts_with_last_100_comments_in_reverse_chrono);
-        app.get("api/user/{id}/posts/comments",viewsController::get_all_comments_on_own_posts);
-        app.get("api/user/{id}/latestcomments",viewsController::get_latest_comments_on_own_or_followers_posts);
-        app.get("api/user/{id}/followers",viewsController::get_followers_of);
-        app.get("api/user/{id}/tofollow",viewsController::get_users_to_follow);
+        app.get("api/user/{id}/followers/posts", viewsController::getFollowersPostsInReverseChrono);
+        app.get("api/user/{id}/posts",viewsController::getOwnPostsWithLast100CommentsInReverseChrono);
+        app.get("api/user/{id}/posts/comments",viewsController::getAllCommentsOnOwnPosts);
+        app.get("api/user/{id}/latestcomments",viewsController::getLatestCommentsOnOwnOrFollowersPosts);
+        app.get("api/user/{id}/followers",viewsController::getFollowersOf);
+        app.get("api/user/{id}/tofollow",viewsController::getUsersToFollow);
 
-        app.get("<url>",operationsController::decode_url);
+        app.get("<url>",operationsController::decodeLink);
 
     }
 }

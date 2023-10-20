@@ -2,19 +2,15 @@ package org.apostolis.service;
 
 import org.apostolis.model.Comment;
 import org.apostolis.model.Post;
-import org.apostolis.model.Role;
+
+import java.util.ArrayList;
+import java.util.HashMap;
 
 public interface OperationsService {
-
-    void create_post(Post postToSave, String token);
-
-    void create_comment(Comment commentToSave, String token);
-
+    void createPost(Post postToSave, String token);
+    void createComment(Comment commentToSave, String token);
     void follow(int follower, int to_follow);
-
     void unfollow(int follower, int to_unfollow);
-
-    String create_url_for_post_and_comments(int user, int post);
-
-    String decode_url(String url);
+    String createUrlForPostAndComments(int user, int post);
+    HashMap<String, ArrayList<String>> decodeUrl(String url);
 }

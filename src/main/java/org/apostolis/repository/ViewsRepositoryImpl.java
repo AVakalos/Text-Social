@@ -10,6 +10,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 
+/* This class implements the database communication for the Views Controller. */
+
 public class ViewsRepositoryImpl implements ViewsRepository{
 
     private static final Logger logger = LoggerFactory.getLogger(ViewsRepositoryImpl.class);
@@ -20,7 +22,7 @@ public class ViewsRepositoryImpl implements ViewsRepository{
     }
 
     @Override
-    public HashMap<String, ArrayList<String>> get_followers_posts_in_reverse_chrono(int id) {
+    public HashMap<String, ArrayList<String>> getFollowersPostsInReverseChrono(int id) {
         DbUtils.ThrowingFunction<Connection, HashMap<String, ArrayList<String>>, Exception> get_followers_posts = (conn) -> {
             String query = "SELECT username, text FROM " +
                         "    users u " +
@@ -55,7 +57,7 @@ public class ViewsRepositoryImpl implements ViewsRepository{
     }
 
     @Override
-    public HashMap<String, ArrayList<String>> get_own_posts_with_last_n_comments_in_reverse_chrono(int id, int max_latest_comments) {
+    public HashMap<String, ArrayList<String>> getOwnPostsWithLastNCommentsInReverseChrono(int id, int max_latest_comments) {
         DbUtils.ThrowingFunction<Connection, HashMap<String, ArrayList<String>>, Exception> get_posts_with_comments = (conn) -> {
             String query = "WITH numbered_comments AS" +
                     "    (SELECT *, " +
@@ -107,21 +109,25 @@ public class ViewsRepositoryImpl implements ViewsRepository{
     }
 
     @Override
-    public ArrayList<String> get_all_comments_on_own_posts(int id) {
-        DbUtils.ThrowingFunction<Connection, ArrayList<String>, Exception> get_all_comments = (conn) -> {
-            String query = "SELECT c.text AS comment " +
+    public HashMap<String,ArrayList<String>> getAllCommentsOnOwnPosts(int id) {
+        DbUtils.ThrowingFunction<Connection, HashMap<String,ArrayList<String>>, Exception> get_all_comments = (conn) -> {
+            String query = "SELECT p.text AS post, c.text AS comment " +
                             "FROM comments AS c " +
                             "RIGHT OUTER JOIN " +
                             "(SELECT text, post_id FROM posts WHERE user_id = ?) AS p " +
                             "ON p.post_id = c.post_id";
-            ArrayList<String> results = new ArrayList<>();
+            HashMap<String,ArrayList<String>> results = new LinkedHashMap<>();
             try(PreparedStatement pst = conn.prepareStatement(query)){
                 pst.setInt(1,id);
                 ResultSet rs = pst.executeQuery();
                 while(rs.next()){
+                    String post = rs.getString("post");
+                    if (!results.containsKey(post)) {
+                        results.put(post, new ArrayList<>());
+                    }
                     String comment = rs.getString("comment");
-                    if(comment != null){
-                        results.add(comment);
+                    if(comment!=null){
+                        results.get(post).add(comment);
                     }
                 }
                 return results;
@@ -136,7 +142,7 @@ public class ViewsRepositoryImpl implements ViewsRepository{
     }
 
     @Override
-    public HashMap<String, String> get_latest_comments_on_own_or_followers_posts(int id) {
+    public HashMap<String, String> getLatestCommentsOnOwnOrFollowersPosts(int id) {
         DbUtils.ThrowingFunction<Connection, HashMap<String, String>, Exception> latest_comments = (conn) -> {
             String query = "WITH numbered_comments AS " +
                     "    (SELECT *, " +
@@ -184,7 +190,7 @@ public class ViewsRepositoryImpl implements ViewsRepository{
     }
 
     @Override
-    public ArrayList<String> get_followers_of(int id) {
+    public ArrayList<String> getFollowersOf(int id) {
         DbUtils.ThrowingFunction<Connection, ArrayList<String>, Exception> get_followers = (conn) -> {
             String query = "WITH follower_ids AS (SELECT follower_id " +
                             "   FROM followers " +
@@ -215,7 +221,7 @@ public class ViewsRepositoryImpl implements ViewsRepository{
     }
 
     @Override
-    public ArrayList<String> get_users_to_follow(int id) {
+    public ArrayList<String> getUsersToFollow(int id) {
         DbUtils.ThrowingFunction<Connection, ArrayList<String>, Exception> get_users_to_follow = (conn) -> {
             String query = "SELECT username AS to_follow " +
                             "FROM users " +

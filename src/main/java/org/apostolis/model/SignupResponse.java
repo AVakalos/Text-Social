@@ -1,5 +1,7 @@
 package org.apostolis.model;
 
+/* Response entity for structured signup responses  */
+
 public class SignupResponse {
     private String message;
     private int status;

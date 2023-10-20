@@ -6,4 +6,5 @@ public interface TokenManager {
     String issueToken (String username, Role role);
     boolean validateToken (String token);
     Role extractRole(String token);
+    String extractUserId(String token);
 }

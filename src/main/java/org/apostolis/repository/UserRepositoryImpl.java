@@ -1,6 +1,5 @@
 package org.apostolis.repository;
 
-
 import org.apostolis.model.User;
 import org.apostolis.security.PasswordEncoder;
 import org.slf4j.Logger;
@@ -9,6 +8,8 @@ import org.slf4j.LoggerFactory;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+
+/* This class implements the database communication of the User Service. */
 
 public class UserRepositoryImpl implements UserRepository {
     private static final Logger logger = LoggerFactory.getLogger(UserRepositoryImpl.class);
@@ -60,7 +61,6 @@ public class UserRepositoryImpl implements UserRepository {
                         );
                     }
                 }else{
-                    //throw new UserNotFoundException("User: "+username+" is not in the database");
                     return null;
                 }
                 return user;
@@ -71,6 +71,46 @@ public class UserRepositoryImpl implements UserRepository {
         }catch(Exception e){
             logger.error("User could not be retrieved");
             throw new RuntimeException(e.getMessage());
+        }
+    }
+
+    @Override
+    public int getUserIdFromUsername(String username) {
+        DbUtils.ThrowingFunction<Connection,Integer, Exception> get_user_id = (conn) -> {
+            int id;
+            try(PreparedStatement pst = conn.prepareStatement("SELECT user_id FROM users WHERE username=?")){
+                pst.setString(1, username);
+                ResultSet rs = pst.executeQuery();
+                rs.next();
+                id = rs.getInt("user_id");
+            }
+            return id;
+        };
+        try{
+            return dbUtils.doInTransaction(get_user_id);
+        }catch(Exception e){
+            logger.error("Could not retrieve the id from username: "+username);
+            throw  new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public String getUsernameFromId(int userId) {
+        DbUtils.ThrowingFunction<Connection, String, Exception> get_username = (conn) -> {
+            String username;
+            try(PreparedStatement pst = conn.prepareStatement("SELECT username FROM users WHERE user_id=?")){
+                pst.setInt(1, userId);
+                ResultSet rs = pst.executeQuery();
+                rs.next();
+                username = rs.getString("username");
+            }
+            return username;
+        };
+        try{
+            return dbUtils.doInTransaction(get_username);
+        }catch(Exception e){
+            logger.error("Could not retrieve the username with id: "+userId);
+            throw  new RuntimeException(e);
         }
     }
 }

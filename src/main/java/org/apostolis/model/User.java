@@ -3,12 +3,12 @@ package org.apostolis.model;
 import me.geso.tinyvalidator.constraints.Email;
 import me.geso.tinyvalidator.constraints.Size;
 
-import java.util.Set;
+/* User entity for signup requests */
 
 public class User {
     @Email
     private String username;
-    @Size(min = 4)
+    @Size(min = 8)
     private String password;
     private Role role;
 
@@ -27,8 +27,5 @@ public class User {
     }
     public Role getRole() {
         return role;
-    }
-    public void setRole(Role role) {
-        this.role = role;
     }
 }

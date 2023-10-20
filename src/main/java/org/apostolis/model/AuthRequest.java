@@ -1,8 +1,9 @@
 package org.apostolis.model;
 
+/* Request entity object for structured login requests */
+
 public class AuthRequest {
     private String username;
-
     private String password;
 
     public AuthRequest(){ }
@@ -22,9 +23,5 @@ public class AuthRequest {
 
     public String getPassword() {
         return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
     }
 }

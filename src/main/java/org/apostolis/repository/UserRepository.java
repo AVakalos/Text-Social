@@ -6,4 +6,6 @@ import org.apostolis.security.PasswordEncoder;
 public interface UserRepository {
     void save(User UserToSave, PasswordEncoder passwordEncoder);
     User getByUsername(String username) throws Exception;
+    int getUserIdFromUsername(String username);
+    String getUsernameFromId(int userId);
 }

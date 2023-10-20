@@ -4,15 +4,13 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+/* Entity for comment creation requests */
+
 @JsonIgnoreProperties({ "id" })
 public class Comment {
-    private int id;
-
     private int user;
-
     private int post;
-
-    private String text;
+    private final String text;
 
     @JsonCreator
     public Comment(@JsonProperty("user") int user, @JsonProperty("post") int post, @JsonProperty("text") String text) {
@@ -41,11 +39,4 @@ public class Comment {
         return text;
     }
 
-    public void setText(String text) {
-        this.text = text;
-    }
-
-    public int getId() {
-        return id;
-    }
 }

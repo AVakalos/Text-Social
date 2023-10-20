@@ -3,13 +3,15 @@ package org.apostolis.repository;
 import java.sql.*;
 import static java.util.Objects.isNull;
 
+/* This class performs database transactions and handles the database connection.
+   The entire project database interaction passes through this class. */
+
 public class DbUtils {
     private  String url = "jdbc:postgresql://localhost:5433/TextSocial";
     private String user="postgres";
     private String password = "1234";
 
-    private static final ThreadLocal<Connection> thlconn = new ThreadLocal<Connection>();
-
+    private static final ThreadLocal<Connection> thlconn = new ThreadLocal<>();
 
     public DbUtils() { }
 
@@ -36,7 +38,7 @@ public class DbUtils {
     public <R> R doInTransaction(ThrowingFunction<Connection,R, Exception> dbtask) throws Exception{
 
         boolean is_parent_transaction = false;
-        R rs = null;
+        R rs;
         if (isNull(thlconn.get())){
             Connection conn = DriverManager.getConnection(url, user, password);
             thlconn.set(conn);

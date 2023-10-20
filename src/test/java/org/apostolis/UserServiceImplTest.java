@@ -22,17 +22,14 @@ import org.apostolis.model.Role;
 import java.sql.*;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.spy;
 
-@ExtendWith(MockitoExtension.class)
+/* Integration tests for the User Service layer of the application */
+
+//@ExtendWith(MockitoExtension.class)
 public class UserServiceImplTest {
-    private static DbUtils testDbUtils;
-
     private static final String testUrl = "jdbc:postgresql://localhost:5433/TextSocialTest";
     private static final String user = "postgres";
     private static final String password = "1234";
-
-    private static UserRepository testUserRepository;
     private static TokenManager testTokenManager;
     private static PasswordEncoder testPasswordEncoder;
     private static UserService testUserService;
@@ -42,8 +39,8 @@ public class UserServiceImplTest {
 
     @BeforeAll
     static void setup(){
-        testDbUtils = new DbUtils(testUrl, user, password);
-        testUserRepository = new UserRepositoryImpl(testDbUtils);
+        DbUtils testDbUtils = new DbUtils(testUrl, user, password);
+        UserRepository testUserRepository = new UserRepositoryImpl(testDbUtils);
         testTokenManager = new JjwtTokenManagerImpl();
         testPasswordEncoder = new PasswordEncoder();
         testUserService = new UserServiceImpl(testUserRepository, testTokenManager,testPasswordEncoder);
@@ -51,12 +48,14 @@ public class UserServiceImplTest {
     }
 
     @AfterAll
-    static void cleanDatabse(){
-        String clean = "TRUNCATE TABLE users RESTART IDENTITY CASCADE";
+    static void cleanDatabase(){
+
         try(Connection connection = DriverManager.getConnection(testUrl,user,password)) {
-            PreparedStatement clean_table = connection.prepareStatement(clean);
-            clean_table.executeUpdate();
-            logger.info("Finally cleaned database");
+            String clean = "TRUNCATE TABLE users RESTART IDENTITY CASCADE";
+            try(PreparedStatement clean_table = connection.prepareStatement(clean)){
+                clean_table.executeUpdate();
+                logger.info("Finally cleaned database");
+            }
         }catch(SQLException e){
             logger.error("Cleaning database after all test methods failed.");
             throw new RuntimeException(e.getMessage());
@@ -69,11 +68,12 @@ public class UserServiceImplTest {
             String clean = "TRUNCATE TABLE users RESTART IDENTITY CASCADE";
             String encoded_password = testPasswordEncoder.encodePassword("pass1");
             String insert = "INSERT INTO users (username,password,role) VALUES('testuser1',?,'FREE')";
-            PreparedStatement initialize_table = connection.prepareStatement(insert);
-            initialize_table.setString(1, encoded_password);
-            PreparedStatement clean_table = connection.prepareStatement(clean);
-            clean_table.executeUpdate();
-            initialize_table.executeUpdate();
+            try(PreparedStatement initialize_table = connection.prepareStatement(insert);
+                PreparedStatement clean_table = connection.prepareStatement(clean)){
+                clean_table.executeUpdate();
+                initialize_table.setString(1, encoded_password);
+                initialize_table.executeUpdate();
+            }
         }catch(SQLException e){
             logger.error("Setup database between test methods failed.");
             throw new RuntimeException(e.getMessage());
@@ -84,27 +84,27 @@ public class UserServiceImplTest {
     void testSignUp(){
         User testuser = new User("testuser","pass","FREE");
         SignupResponse producedResponse = testUserService.signup(testuser);
-        assertEquals(producedResponse.getStatus(),201);
+        assertEquals(201,producedResponse.getStatus());
     }
     @Test
     void testUnsuccessfulSignUp(){
         User testuser = new User("testuser1","pass1","FREE");
         SignupResponse producedResponse = testUserService.signup(testuser);
-        assertEquals(producedResponse.getStatus(),406);
+        assertEquals(406,producedResponse.getStatus());
     }
 
     @Test
     void testLogin(){
         AuthRequest testRequest = new AuthRequest("testuser1","pass1");
         AuthResponse producedResponse = testUserService.login(testRequest);
-        assertEquals(producedResponse.getStatus(),202);
+        assertEquals(202,producedResponse.getStatus());
     }
 
     @Test
     void testUnsuccessfulLogin(){
         AuthRequest testRequest = new AuthRequest("testuser1","incorrect");
         AuthResponse producedResponse = testUserService.login(testRequest);
-        assertEquals(producedResponse.getStatus(),401);
+        assertEquals(401,producedResponse.getStatus());
     }
 
     @Test
@@ -115,7 +115,7 @@ public class UserServiceImplTest {
     @Test
     void testUnsuccessfulAuth(){
         String token = testTokenManager.issueToken("testuser1",Role.valueOf("FREE"));
-        String InvalidToken = token += "sdd";
+        String InvalidToken = token+"sdd";
         assertThrows(Exception.class, () -> testTokenManager.validateToken(InvalidToken));
     }
 

@@ -1,5 +1,7 @@
 package org.apostolis.model;
 
+/* Response entity object for structured login responses  */
+
 public class AuthResponse {
     private String username;
     private String token;
@@ -15,7 +17,6 @@ public class AuthResponse {
         this.status = status;
     }
 
-
     public String getUsername() {
         return username;
     }
@@ -30,10 +31,6 @@ public class AuthResponse {
 
     public void setToken(String token) {
         this.token = token;
-    }
-
-    public String getMessage() {
-        return message;
     }
 
     public void setMessage(String message) {

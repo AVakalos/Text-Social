@@ -9,7 +9,6 @@ import org.apostolis.model.AuthRequest;
 import org.apostolis.model.AuthResponse;
 import org.apostolis.model.SignupResponse;
 import org.apostolis.model.User;
-import org.apostolis.repository.UserRepositoryImpl;
 import org.apostolis.service.UserService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,9 +16,11 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/* This REST controller class handles the signup, login and authentication requests */
+
 public class UserController {
 
-    private UserService userService;
+    private final UserService userService;
 
     private static final Logger logger = LoggerFactory.getLogger(UserController.class);
     public UserController(UserService userService){
@@ -39,7 +40,6 @@ public class UserController {
             throw new BadRequestResponse(message);
         }
 
-
         SignupResponse rsp = userService.signup(userFromContextBody);
         ctx.status(rsp.getStatus());
         ctx.result(rsp.getMessage());
@@ -51,6 +51,7 @@ public class UserController {
         ctx.json(rsp);
     }
 
+    // Check the token provided with the request and authenticate the user to allow interaction with the system.
     public void authenticate (Context ctx){
         logger.info("Authenticate user");
         String token = ctx.header("Authorization");

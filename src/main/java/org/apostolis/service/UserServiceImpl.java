@@ -1,5 +1,6 @@
 package org.apostolis.service;
 
+import io.javalin.http.UnauthorizedResponse;
 import org.apostolis.model.AuthRequest;
 import org.apostolis.model.AuthResponse;
 import org.apostolis.model.SignupResponse;
@@ -10,6 +11,8 @@ import org.apostolis.security.PasswordEncoder;
 import org.apostolis.security.TokenManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+/* This class implements the business logic of login, signup and user authentication. */
 
 public class UserServiceImpl implements UserService {
 
@@ -49,7 +52,7 @@ public class UserServiceImpl implements UserService {
                 logger.info("The username is available for signup.");
             }
         }catch(Exception e){
-            logger.error(e.getMessage());
+            throw new UnauthorizedResponse("Could not sign up");
         }
         repository.save(UserToSave, passwordEncoder);
         response.setMessage("User signed up.");
@@ -73,7 +76,7 @@ public class UserServiceImpl implements UserService {
                 response.setStatus(202);
             }
         }catch(Exception e){
-            System.out.println(e.getMessage());
+            throw new UnauthorizedResponse("Could not sign in");
         }
         logger.info("User signed in successfully");
         return response;

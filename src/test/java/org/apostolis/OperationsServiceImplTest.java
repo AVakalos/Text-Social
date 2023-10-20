@@ -17,15 +17,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.*;
+import java.util.ArrayList;
+import java.util.HashMap;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+// Integration Tests the operation service layer of the application
 
 public class OperationsServiceImplTest {
     private static DbUtils testDbUtils;
     private static TokenManager testTokenManager;
-    private static UserRepository testUserRepository;
-    private static UserService testUserService;
     private static OperationsRepository testOperationsRepository;
     private static OperationsService testOperationService;
     private static PasswordEncoder testPasswordEncoder;
@@ -34,37 +35,55 @@ public class OperationsServiceImplTest {
     private static final String user = "postgres";
     private static final String password = "1234";
 
-    private static final Logger logger = LoggerFactory.getLogger(OperationsServiceImplTest.class);
+
+    static void preparePostAndFollow(Connection connection) throws SQLException{
+        String insert_post = "INSERT INTO posts (user_id, text, created) VALUES (1,'first_post',?)";
+        String insert_comments = "INSERT INTO comments (post_id, user_id, text, created) VALUES (1,2,'comment',?),(1,1,'mycomment',?)";
+        String insert_follow = "INSERT INTO followers VALUES(1,2)";
+        try(PreparedStatement add_post_stm = connection.prepareStatement(insert_post);
+            PreparedStatement add_comments_stm = connection.prepareStatement(insert_comments);
+            PreparedStatement add_follow_stm = connection.prepareStatement(insert_follow)){
+            add_post_stm.setTimestamp(1, new Timestamp(System.currentTimeMillis()));
+            add_post_stm.executeUpdate();
+            add_comments_stm.setTimestamp(1, new Timestamp(System.currentTimeMillis()+2000));
+            add_comments_stm.setTimestamp(2, new Timestamp(System.currentTimeMillis()+3000));
+            add_comments_stm.executeUpdate();
+            add_follow_stm.executeUpdate();
+        }
+    }
 
 
-    //
+    // Prepare the database for the test cases
     @BeforeAll
     static void setup(){
         testDbUtils = new DbUtils(testUrl, user, password);
-        testUserRepository = new UserRepositoryImpl(testDbUtils);
         testTokenManager = new JjwtTokenManagerImpl();
         testPasswordEncoder = new PasswordEncoder();
-        testUserService = new UserServiceImpl(testUserRepository, testTokenManager,testPasswordEncoder);
 
         try(Connection connection = DriverManager.getConnection(testUrl,user,password)) {
             // initial clean for any possible garbage data
-            PreparedStatement clean_stm = connection.prepareStatement(
-                    "TRUNCATE TABLE users,comments, posts, followers RESTART IDENTITY CASCADE");
-            clean_stm.executeUpdate();
+
+            try(PreparedStatement clean_stm = connection.prepareStatement(
+                    "TRUNCATE TABLE users,comments, posts, followers RESTART IDENTITY CASCADE")){
+                clean_stm.executeUpdate();
+            };
 
             // register users
-            User freeUser = new User("freeuser","pass","FREE");
-            User premiumUser = new User("premuser","pass","PREMIUM");
-            testUserService.signup(freeUser);
-            testUserService.signup(premiumUser);
+            String encoded_password = testPasswordEncoder.encodePassword("pass");
+            String insert_user1 = "INSERT INTO users (username,password,role) VALUES('freeuser',?,'FREE')";
+            String insert_user_2 = "INSERT INTO users (username,password,role) VALUES('premuser',?,'PREMIUM')";
 
-            // insert one post to allow comments creation
-            String insert_stm = "INSERT INTO posts (user_id, text, created) VALUES (1,'first_post',?)";
-            PreparedStatement add_post = connection.prepareStatement(insert_stm);
-            add_post.setTimestamp(1, new Timestamp(System.currentTimeMillis()));
-            add_post.executeUpdate();
+            try(PreparedStatement insert_user_1_stm = connection.prepareStatement(insert_user1);
+                PreparedStatement insert_user_2_stm = connection.prepareStatement(insert_user_2)){
+                insert_user_1_stm.setString(1,encoded_password);
+                insert_user_2_stm.setString(1, encoded_password);
+                insert_user_1_stm.executeUpdate();
+                insert_user_2_stm.executeUpdate();
+            }
+            // insert one post and a follow for the create post and unfollow test cases
+            preparePostAndFollow(connection);
+
         } catch (SQLException e) {
-            logger.error("Database initialization");
             throw new RuntimeException(e);
         }
         testOperationsRepository = new OperationsRepositoryImpl(testDbUtils);
@@ -72,114 +91,113 @@ public class OperationsServiceImplTest {
                 testOperationsRepository, testTokenManager,20,30,2);
     }
 
-    // Return the database to the initial state
+    // Return the database to the initial state between test cases
     @BeforeEach
-    void intermediate_setup_database() {
+    void intermediateSetupDatabase() {
         try(Connection connection = DriverManager.getConnection(testUrl,user,password)){
 
-            PreparedStatement clean_posts = connection.prepareStatement("TRUNCATE TABLE posts RESTART IDENTITY CASCADE");
-            PreparedStatement clean_followers = connection.prepareStatement("TRUNCATE TABLE followers RESTART IDENTITY CASCADE");
-            PreparedStatement clean_comments = connection.prepareStatement("TRUNCATE TABLE comments RESTART IDENTITY CASCADE");
-
-            clean_posts.executeUpdate();
-            clean_comments.executeUpdate();
-            clean_followers.executeUpdate();
-
-            String insert_stm = "INSERT INTO posts (user_id, text, created) VALUES (1,'first_post',?)";
-            PreparedStatement add_post = connection.prepareStatement(insert_stm);
-            add_post.setTimestamp(1, new Timestamp(System.currentTimeMillis()));
-            add_post.executeUpdate();
-
+            try(PreparedStatement clean_posts = connection.prepareStatement("TRUNCATE TABLE posts RESTART IDENTITY CASCADE");
+                PreparedStatement clean_followers = connection.prepareStatement("TRUNCATE TABLE followers RESTART IDENTITY CASCADE");
+                PreparedStatement clean_comments = connection.prepareStatement("TRUNCATE TABLE comments RESTART IDENTITY CASCADE")){
+                clean_posts.executeUpdate();
+                clean_comments.executeUpdate();
+                clean_followers.executeUpdate();
+            }
+            preparePostAndFollow(connection);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
 
     @Test
-    void post_from_free_user_under_limit(){
-        AuthResponse response = testUserService.login(new AuthRequest("freeuser","pass"));
+    void postFromFreeUserUnderLimit(){
+        String token = testTokenManager.issueToken("freeuser",Role.FREE);
         Post post = new Post(1,"pass_length_post"); // 16
-        testOperationService.create_post(post,response.getToken());
+        testOperationService.createPost(post,token);
         assertDoesNotThrow(() -> UnauthorizedResponse.class);
     }
 
     @Test
-    void post_from_free_user_exceed_limit(){
-        AuthResponse response = testUserService.login(new AuthRequest("freeuser","pass"));
+    void postFromFreeUserExceedLimit(){
+        String token = testTokenManager.issueToken("freeuser",Role.FREE);
         Post post = new Post(1,"pass_length_post_exceeding_the_limits"); // 37
-        assertThrows(UnauthorizedResponse.class, () -> testOperationService.create_post(post,response.getToken()));
+        assertThrows(UnauthorizedResponse.class, () -> testOperationService.createPost(post,token));
     }
 
     @Test
-    void post_from_premium_user_between_limits(){
-        AuthResponse response = testUserService.login(new AuthRequest("premuser","pass"));
+    void postFromPremiumUserBetweenLimits(){
+        String token = testTokenManager.issueToken("premuser",Role.PREMIUM);
         Post post = new Post(2,"post_length_greater_than_free"); // 29
-        testOperationService.create_post(post,response.getToken());
+        testOperationService.createPost(post,token);
         assertDoesNotThrow(() -> UnauthorizedResponse.class);
     }
 
     @Test
-    void post_from_premium_user_exceed_limit(){
-        AuthResponse response = testUserService.login(new AuthRequest("premuser","pass"));
+    void postFromPremiumUserExceedLimit(){
+        String token = testTokenManager.issueToken("premuser",Role.PREMIUM);
         Post post = new Post(2,"pass_length_post_exceeding_the_limits"); // 37
-        assertThrows(UnauthorizedResponse.class, () -> testOperationService.create_post(post,response.getToken()));
+        assertThrows(UnauthorizedResponse.class, () -> testOperationService.createPost(post,token));
     }
 
     @Test
-    void comment_from_free_user(){
-        AuthResponse response = testUserService.login(new AuthRequest("freeuser","pass"));
+    void commentFromFreeUser(){
+        String token = testTokenManager.issueToken("freeuser",Role.FREE);
         Comment comment = new Comment(1,1,"first comment");
-        testOperationService.create_comment(comment, response.getToken());
+        testOperationService.createComment(comment, token);
         assertDoesNotThrow(() -> RuntimeException.class);
         assertDoesNotThrow(() -> UnauthorizedResponse.class);
     }
 
     @Test
-    void comment_from_free_user_exceed_limit(){
-        AuthResponse response = testUserService.login(new AuthRequest("freeuser","pass"));
+    void commentFromFreeUserExceedLimit(){
+        String token = testTokenManager.issueToken("freeuser",Role.FREE);
         Comment comment1 = new Comment(1,1,"comment1");
         Comment comment2 = new Comment(1,1,"comment2");
         Comment comment3 = new Comment(1,1,"comment3");
 
         assertThrows(UnauthorizedResponse.class, () -> {
-            String token = response.getToken();
-            testOperationService.create_comment(comment1, token);
-            testOperationService.create_comment(comment2, token);
-            testOperationService.create_comment(comment3, token);
+            testOperationService.createComment(comment1, token);
+            testOperationService.createComment(comment2, token);
+            testOperationService.createComment(comment3, token);
         });
     }
 
     @Test
-    void comment_from_premium_user(){
-        AuthResponse response = testUserService.login(new AuthRequest("premuser","pass"));
+    void commentFromPremiumUser(){
+        String token = testTokenManager.issueToken("premuser",Role.PREMIUM);
         Comment comment1 = new Comment(1,1,"comment1");
         Comment comment2 = new Comment(1,1,"comment2");
         Comment comment3 = new Comment(1,1,"comment3");
-        String token = response.getToken();
-        testOperationService.create_comment(comment1, token);
-        testOperationService.create_comment(comment2, token);
-        testOperationService.create_comment(comment3, token);
+        testOperationService.createComment(comment1, token);
+        testOperationService.createComment(comment2, token);
+        testOperationService.createComment(comment3, token);
 
         assertDoesNotThrow(() -> UnauthorizedResponse.class);
     }
 
     @Test
     void follow(){
-        AuthResponse response = testUserService.login(new AuthRequest("freeuser","pass"));
-        testOperationService.follow(1,2);
+        testOperationService.follow(2,1);
         assertDoesNotThrow(() -> RuntimeException.class);
     }
 
     @Test
-    void follow_yourself_not_allowed(){
-        AuthResponse response = testUserService.login(new AuthRequest("freeuser","pass"));
+    void followYourselfNotAllowed(){
         assertThrows(UnauthorizedResponse.class, () -> testOperationService.follow(1,1));
     }
 
     @Test
     void unfollow(){
-        AuthResponse response = testUserService.login(new AuthRequest("freeuser","pass"));
         testOperationService.unfollow(1,2);
         assertDoesNotThrow(() -> RuntimeException.class);
+    }
+
+    @Test
+    void UrlForPostAndComments(){
+        String url = testOperationService.createUrlForPostAndComments(1,1);
+        HashMap<String, ArrayList<String>> decoded = testOperationService.decodeUrl(url);
+        System.out.println(decoded.toString());
+        assertEquals(2,decoded.get("first_post").size());
+        assertEquals("mycomment",decoded.get("first_post").get(0));
     }
 }

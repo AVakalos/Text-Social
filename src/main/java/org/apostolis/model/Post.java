@@ -1,14 +1,15 @@
 package org.apostolis.model;
 
-import com.fasterxml.jackson.annotation.JacksonInject;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+/* Entity for post creation requests */
+
 @JsonIgnoreProperties({ "id" })
 public class Post {
     private int user;
-    private String text;
+    private final String text;
 
     @JsonCreator
     public Post(@JsonProperty("user") int user, @JsonProperty("text") String text) {
@@ -26,9 +27,5 @@ public class Post {
 
     public String getText() {
         return text;
-    }
-
-    public void setText(String text) {
-        this.text = text;
     }
 }
