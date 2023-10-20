@@ -40,7 +40,8 @@ All users regardless of their type can retrieve the same data from the system. T
 
 Every user can create a link associated with an original post, including the latest 100 comments. This link allows
 everyone who has it to see the post and the latest 100 comments at this moment. 
-Note: The post associated with the link must belong to the user who creates the link.  
+Note: The post associated with the link must belong to the user who creates the link. 
+To prevent data leaks through url manipulation each generated link is stored in database and is validated before the data retrieval.
 
 ## REST API Documentation
 
