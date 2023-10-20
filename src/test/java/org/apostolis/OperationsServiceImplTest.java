@@ -8,13 +8,9 @@ import org.apostolis.security.PasswordEncoder;
 import org.apostolis.security.TokenManager;
 import org.apostolis.service.OperationsService;
 import org.apostolis.service.OperationsServiceImpl;
-import org.apostolis.service.UserService;
-import org.apostolis.service.UserServiceImpl;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -66,7 +62,7 @@ public class OperationsServiceImplTest {
             try(PreparedStatement clean_stm = connection.prepareStatement(
                     "TRUNCATE TABLE users,comments, posts, followers RESTART IDENTITY CASCADE")){
                 clean_stm.executeUpdate();
-            };
+            }
 
             // register users
             String encoded_password = testPasswordEncoder.encodePassword("pass");

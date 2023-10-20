@@ -13,8 +13,6 @@ import org.apostolis.security.TokenManager;
 import org.apostolis.service.UserService;
 import org.apostolis.service.UserServiceImpl;
 import org.junit.jupiter.api.*;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apostolis.model.Role;

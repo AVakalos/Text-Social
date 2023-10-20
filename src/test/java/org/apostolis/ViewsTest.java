@@ -16,7 +16,6 @@ import static org.junit.jupiter.api.Assertions.*;
 /* Integration tests for the Views Repository Layer. */
 
 public class ViewsTest {
-    private static DbUtils testDbUtils;
     private static ViewsRepository testViewsRepository;
     private static final String testUrl = "jdbc:postgresql://localhost:5433/TextSocialTest";
     private static final String user = "postgres";
@@ -26,7 +25,7 @@ public class ViewsTest {
 
     @BeforeAll
     static void setup(){
-        testDbUtils = new DbUtils(testUrl, user, password);
+        DbUtils testDbUtils = new DbUtils(testUrl, user, password);
         testViewsRepository = new ViewsRepositoryImpl(testDbUtils);
 
         try(Connection connection = DriverManager.getConnection(testUrl,user,password)) {
@@ -136,7 +135,7 @@ public class ViewsTest {
     @Test
     void get_all_comments_on_own_posts(){
         HashMap<String,ArrayList<String>> results = testViewsRepository.getAllCommentsOnOwnPosts(1);
-        assertEquals(5,results.size());
+        assertEquals(5,results.get("post1 from user1").size()+results.get("post2 from user1").size());
     }
 
     @Test
