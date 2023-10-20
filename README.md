@@ -63,9 +63,13 @@ The project dependencies also include:
 
 ## How to install and Run
 
-To install the project build with maven and create the database with th schema creation script 
-and populate the tables using the data script through postgres restore. 
-After the database is set up you can run the application web server.
+1. Create the TextSocial and Text Social Test databases in Postgres (e.g. pgAdmin, psql) 
+2. Run the schema creation script on both of them. (schema_initialize.sql)
+3. Populate the tables of TextSocial database using the data script (data.sql) through postgres restore.
+   (The test database does not need population)
+4. Build the Maven project
+5. Start the application web server by running the main method in the App.java file.
+
 The passwords for all users is "1234". The requests can be sent with any client such as Postman. 
 For the complete documentation of the rest API click [here](https://documenter.getpostman.com/view/29541731/2s9YRB2rbN).
 
