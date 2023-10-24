@@ -2,6 +2,7 @@ package org.apostolis.service;
 
 import io.javalin.http.BadRequestResponse;
 import io.javalin.http.UnauthorizedResponse;
+import org.apostolis.config.AppConfig;
 import org.apostolis.model.Comment;
 import org.apostolis.model.Post;
 import org.apostolis.model.Role;
@@ -99,7 +100,11 @@ public class OperationsServiceImpl implements OperationsService{
             // register the link to prevent data leaks via url manipulation
             operationsRepository.registerLink(user, post);
             String description = user+","+post;
-            return "http://localhost:7777/"+URLEncoder.encode(description, StandardCharsets.UTF_8.toString());
+
+            String host = AppConfig.readProperties().getProperty("host");
+            String port = AppConfig.readProperties().getProperty("port");
+
+            return "http://"+host+":"+port+"/"+URLEncoder.encode(description, StandardCharsets.UTF_8.toString());
         }catch(UnsupportedEncodingException e){
             throw new RuntimeException(e.getMessage());
         }
@@ -107,7 +112,9 @@ public class OperationsServiceImpl implements OperationsService{
     @Override
     public HashMap<String, ArrayList<String>> decodeUrl(String url) {
         try{
-            String encoded = url.replace("http://localhost:7777/","");
+            String host = AppConfig.readProperties().getProperty("host");
+            String port = AppConfig.readProperties().getProperty("port");
+            String encoded = url.replace("http://"+host+":"+port+"/","");
             String decoded = URLDecoder.decode(encoded, StandardCharsets.UTF_8.toString());
 
             String[] splitted =  decoded.split(",");

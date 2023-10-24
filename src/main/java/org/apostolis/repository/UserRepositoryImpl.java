@@ -2,12 +2,14 @@ package org.apostolis.repository;
 
 import org.apostolis.model.User;
 import org.apostolis.security.PasswordEncoder;
+import org.apostolis.service.DbUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.util.Arrays;
 
 /* This class implements the database communication of the User Service. */
 
@@ -70,7 +72,7 @@ public class UserRepositoryImpl implements UserRepository {
             return dbUtils.doInTransaction(retrieveUser);
         }catch(Exception e){
             logger.error("User could not be retrieved");
-            throw new RuntimeException(e.getMessage());
+            throw new RuntimeException();
         }
     }
 

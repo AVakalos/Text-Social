@@ -1,5 +1,6 @@
 package org.apostolis.repository;
 
+import org.apostolis.service.DbUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

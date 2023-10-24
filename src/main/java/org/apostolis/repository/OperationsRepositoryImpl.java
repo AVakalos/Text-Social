@@ -3,6 +3,7 @@ package org.apostolis.repository;
 import io.javalin.http.BadRequestResponse;
 import org.apostolis.model.Comment;
 import org.apostolis.model.Post;
+import org.apostolis.service.DbUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

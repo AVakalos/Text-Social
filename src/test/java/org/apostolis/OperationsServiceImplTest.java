@@ -1,13 +1,13 @@
 package org.apostolis;
 
 import io.javalin.http.UnauthorizedResponse;
+import org.apostolis.config.AppConfig;
 import org.apostolis.model.*;
 import org.apostolis.repository.*;
-import org.apostolis.security.JjwtTokenManagerImpl;
 import org.apostolis.security.PasswordEncoder;
 import org.apostolis.security.TokenManager;
+import org.apostolis.service.DbUtils;
 import org.apostolis.service.OperationsService;
-import org.apostolis.service.OperationsServiceImpl;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,9 +27,7 @@ public class OperationsServiceImplTest {
     private static OperationsService testOperationService;
     private static PasswordEncoder testPasswordEncoder;
 
-    private static final String testUrl = "jdbc:postgresql://localhost:5433/TextSocialTest";
-    private static final String user = "postgres";
-    private static final String password = "1234";
+    static AppConfig testAppConfig = new AppConfig("test");
 
 
     static void preparePostAndFollow(Connection connection) throws SQLException{
@@ -48,17 +46,14 @@ public class OperationsServiceImplTest {
         }
     }
 
-
     // Prepare the database for the test cases
     @BeforeAll
     static void setup(){
-        testDbUtils = new DbUtils(testUrl, user, password);
-        testTokenManager = new JjwtTokenManagerImpl();
-        testPasswordEncoder = new PasswordEncoder();
+        testDbUtils = testAppConfig.getDbUtils();
+        testTokenManager = testAppConfig.getTokenManager();
+        testPasswordEncoder = testAppConfig.getPasswordEncoder();
 
-        try(Connection connection = DriverManager.getConnection(testUrl,user,password)) {
-            // initial clean for any possible garbage data
-
+        DbUtils.ThrowingConsumer<Connection, Exception> setup_database = (connection) -> {
             try(PreparedStatement clean_stm = connection.prepareStatement(
                     "TRUNCATE TABLE users,comments, posts, followers RESTART IDENTITY CASCADE")){
                 clean_stm.executeUpdate();
@@ -78,20 +73,22 @@ public class OperationsServiceImplTest {
             }
             // insert one post and a follow for the create post and unfollow test cases
             preparePostAndFollow(connection);
-
-        } catch (SQLException e) {
+        };
+        try {
+            // initial clean for any possible garbage data
+            testDbUtils.doInTransaction(setup_database);
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
-        testOperationsRepository = new OperationsRepositoryImpl(testDbUtils);
-        testOperationService= new OperationsServiceImpl(
-                testOperationsRepository, testTokenManager,20,30,2);
+
+        testOperationsRepository = testAppConfig.getOperationsRepository();
+        testOperationService= testAppConfig.getOperationsService();
     }
 
     // Return the database to the initial state between test cases
     @BeforeEach
     void intermediateSetupDatabase() {
-        try(Connection connection = DriverManager.getConnection(testUrl,user,password)){
-
+        DbUtils.ThrowingConsumer<Connection, Exception> intermediate_setup_database = (connection) -> {
             try(PreparedStatement clean_posts = connection.prepareStatement("TRUNCATE TABLE posts RESTART IDENTITY CASCADE");
                 PreparedStatement clean_followers = connection.prepareStatement("TRUNCATE TABLE followers RESTART IDENTITY CASCADE");
                 PreparedStatement clean_comments = connection.prepareStatement("TRUNCATE TABLE comments RESTART IDENTITY CASCADE")){
@@ -100,7 +97,10 @@ public class OperationsServiceImplTest {
                 clean_followers.executeUpdate();
             }
             preparePostAndFollow(connection);
-        } catch (SQLException e) {
+        };
+        try{
+            testDbUtils.doInTransaction(intermediate_setup_database);
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
@@ -192,7 +192,6 @@ public class OperationsServiceImplTest {
     void UrlForPostAndComments(){
         String url = testOperationService.createUrlForPostAndComments(1,1);
         HashMap<String, ArrayList<String>> decoded = testOperationService.decodeUrl(url);
-        System.out.println(decoded.toString());
         assertEquals(2,decoded.get("first_post").size());
         assertEquals("mycomment",decoded.get("first_post").get(0));
     }

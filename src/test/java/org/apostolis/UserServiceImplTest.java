@@ -1,17 +1,14 @@
 package org.apostolis;
 
+import org.apostolis.config.AppConfig;
 import org.apostolis.model.AuthRequest;
 import org.apostolis.model.AuthResponse;
 import org.apostolis.model.SignupResponse;
 import org.apostolis.model.User;
-import org.apostolis.repository.DbUtils;
-import org.apostolis.repository.UserRepository;
-import org.apostolis.repository.UserRepositoryImpl;
-import org.apostolis.security.JjwtTokenManagerImpl;
+import org.apostolis.service.DbUtils;
 import org.apostolis.security.PasswordEncoder;
 import org.apostolis.security.TokenManager;
 import org.apostolis.service.UserService;
-import org.apostolis.service.UserServiceImpl;
 import org.junit.jupiter.api.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,38 +20,39 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /* Integration tests for the User Service layer of the application */
 
-//@ExtendWith(MockitoExtension.class)
 public class UserServiceImplTest {
-    private static final String testUrl = "jdbc:postgresql://localhost:5433/TextSocialTest";
-    private static final String user = "postgres";
-    private static final String password = "1234";
     private static TokenManager testTokenManager;
     private static PasswordEncoder testPasswordEncoder;
     private static UserService testUserService;
+    private static DbUtils testDbUtils;
+
+    static AppConfig testAppConfig = new AppConfig("test");
 
     private static final Logger logger = LoggerFactory.getLogger(UserServiceImplTest.class);
 
 
     @BeforeAll
     static void setup(){
-        DbUtils testDbUtils = new DbUtils(testUrl, user, password);
-        UserRepository testUserRepository = new UserRepositoryImpl(testDbUtils);
-        testTokenManager = new JjwtTokenManagerImpl();
-        testPasswordEncoder = new PasswordEncoder();
-        testUserService = new UserServiceImpl(testUserRepository, testTokenManager,testPasswordEncoder);
+        testDbUtils = testAppConfig.getDbUtils();
+        testTokenManager = testAppConfig.getTokenManager();
+        testPasswordEncoder = testAppConfig.getPasswordEncoder();
+        testUserService = testAppConfig.getUserService();
         logger.info("Initial setup of test");
     }
 
     @AfterAll
     static void cleanDatabase(){
 
-        try(Connection connection = DriverManager.getConnection(testUrl,user,password)) {
+        DbUtils.ThrowingConsumer<Connection, Exception> clean_database = (connection) -> {
             String clean = "TRUNCATE TABLE users RESTART IDENTITY CASCADE";
             try(PreparedStatement clean_table = connection.prepareStatement(clean)){
                 clean_table.executeUpdate();
                 logger.info("Finally cleaned database");
             }
-        }catch(SQLException e){
+        };
+        try {
+            testDbUtils.doInTransaction(clean_database);
+        }catch(Exception e){
             logger.error("Cleaning database after all test methods failed.");
             throw new RuntimeException(e.getMessage());
         }
@@ -62,7 +60,7 @@ public class UserServiceImplTest {
 
     @BeforeEach
     void setupDatabase(){
-        try(Connection connection = DriverManager.getConnection(testUrl,user,password)) {
+        DbUtils.ThrowingConsumer<Connection, Exception> setup_database = (connection) -> {
             String clean = "TRUNCATE TABLE users RESTART IDENTITY CASCADE";
             String encoded_password = testPasswordEncoder.encodePassword("pass1");
             String insert = "INSERT INTO users (username,password,role) VALUES('testuser1',?,'FREE')";
@@ -72,7 +70,11 @@ public class UserServiceImplTest {
                 initialize_table.setString(1, encoded_password);
                 initialize_table.executeUpdate();
             }
-        }catch(SQLException e){
+        };
+
+        try {
+            testDbUtils.doInTransaction(setup_database);
+        }catch(Exception e){
             logger.error("Setup database between test methods failed.");
             throw new RuntimeException(e.getMessage());
         }

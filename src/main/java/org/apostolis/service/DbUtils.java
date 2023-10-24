@@ -1,4 +1,6 @@
-package org.apostolis.repository;
+package org.apostolis.service;
+
+import org.apostolis.config.AppConfig;
 
 import java.sql.*;
 import static java.util.Objects.isNull;
@@ -7,19 +9,9 @@ import static java.util.Objects.isNull;
    The entire project database interaction passes through this class. */
 
 public class DbUtils {
-    private  String url = "jdbc:postgresql://localhost:5433/TextSocial";
-    private String user="postgres";
-    private String password = "1234";
-
     private static final ThreadLocal<Connection> thlconn = new ThreadLocal<>();
 
-    public DbUtils() { }
-
-    public DbUtils(String url, String user, String password) {
-        this.url = url;
-        this.user = user;
-        this.password = password;
-    }
+    public DbUtils() {}
 
     // Custom Functional Interfaces to handle Exceptions in lambda expressions
     @FunctionalInterface
@@ -40,7 +32,7 @@ public class DbUtils {
         boolean is_parent_transaction = false;
         R rs;
         if (isNull(thlconn.get())){
-            Connection conn = DriverManager.getConnection(url, user, password);
+            Connection conn = AppConfig.getConnection();
             thlconn.set(conn);
             is_parent_transaction = true;
         }
@@ -60,6 +52,7 @@ public class DbUtils {
         if(is_parent_transaction){
             thlconn.remove();
         }
+        conn.close();
         return rs;
     }
 
@@ -68,7 +61,7 @@ public class DbUtils {
 
         boolean is_parent_transaction = false;
         if (isNull(thlconn.get())){
-            Connection conn = DriverManager.getConnection(url, user, password);
+            Connection conn = AppConfig.getConnection();
             thlconn.set(conn);
             is_parent_transaction = true;
         }
@@ -87,5 +80,6 @@ public class DbUtils {
         if(is_parent_transaction){
             thlconn.remove();
         }
+        conn.close();
     }
 }

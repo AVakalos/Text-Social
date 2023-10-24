@@ -1,6 +1,8 @@
 package org.apostolis;
 
+import org.apostolis.config.AppConfig;
 import org.apostolis.repository.*;
+import org.apostolis.service.DbUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -17,18 +19,17 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class ViewsTest {
     private static ViewsRepository testViewsRepository;
-    private static final String testUrl = "jdbc:postgresql://localhost:5433/TextSocialTest";
-    private static final String user = "postgres";
-    private static final String password = "1234";
+    private static DbUtils testDbUtils;
+    static AppConfig testAppConfig = new AppConfig("test");
 
     private static final Logger logger = LoggerFactory.getLogger(ViewsTest.class);
 
     @BeforeAll
     static void setup(){
-        DbUtils testDbUtils = new DbUtils(testUrl, user, password);
-        testViewsRepository = new ViewsRepositoryImpl(testDbUtils);
+        testDbUtils = testAppConfig.getDbUtils();
+        testViewsRepository = testAppConfig.getViewsRepository();
 
-        try(Connection connection = DriverManager.getConnection(testUrl,user,password)) {
+        DbUtils.ThrowingConsumer<Connection, Exception> setup_database = (connection) -> {
             // initial clean for any possible garbage data
             try(PreparedStatement clean_stm = connection.prepareStatement(
                     "TRUNCATE TABLE users,comments, posts, followers RESTART IDENTITY CASCADE")) {
@@ -37,19 +38,19 @@ public class ViewsTest {
 
             // Populate users table
             String insert_users = "INSERT INTO users (username,password,role) VALUES" +
-                                        "('user1','pass','role')," +
-                                        "('user2','pass','role')," +
-                                        "('user3','pass','role')";
+                    "('user1','pass','role')," +
+                    "('user2','pass','role')," +
+                    "('user3','pass','role')";
             try(PreparedStatement insert_users_stm = connection.prepareStatement(insert_users)){
                 insert_users_stm.executeUpdate();
             }
 
             // Populate posts table (post_id is autoincrement 1,2,3,4 accordingly)
             String insert_posts = "INSERT INTO posts (user_id, text, created) VALUES " +
-                                        "(1,'post1 from user1',?)," +
-                                        "(1,'post2 from user1',?)," +
-                                        "(2,'post1 from user2',?)," +
-                                        "(3,'post1 from user3',?)";
+                    "(1,'post1 from user1',?)," +
+                    "(1,'post2 from user1',?)," +
+                    "(2,'post1 from user2',?)," +
+                    "(3,'post1 from user3',?)";
             try(PreparedStatement insert_posts_stm = connection.prepareStatement(insert_posts)){
                 for(int i=1; i<=4; i++){
                     insert_posts_stm.setTimestamp(i, Timestamp.from(
@@ -60,12 +61,12 @@ public class ViewsTest {
 
             // Populate comments table
             String insert_comments = "INSERT INTO comments (post_id,user_id,text,created) VALUES" +
-                                        "(1,2,'com1 from user2',?)," +
-                                        "(2,1,'com1 from user1',?)," +
-                                        "(3,1,'com1 from user1',?)," +
-                                        "(1,3,'com2 from user3',?),"+
-                                        "(2,2,'com2 from user2',?),"+
-                                        "(2,3,'com3 from user3',?)";
+                    "(1,2,'com1 from user2',?)," +
+                    "(2,1,'com1 from user1',?)," +
+                    "(3,1,'com1 from user1',?)," +
+                    "(1,3,'com2 from user3',?),"+
+                    "(2,2,'com2 from user2',?),"+
+                    "(2,3,'com3 from user3',?)";
             try(PreparedStatement insert_comments_stm = connection.prepareStatement(insert_comments)){
                 for(int i=1; i<=6; i++){
                     insert_comments_stm.setTimestamp(i, Timestamp.from(
@@ -79,8 +80,11 @@ public class ViewsTest {
             try(PreparedStatement insert_follows_stm = connection.prepareStatement(insert_follows)){
                 insert_follows_stm.executeUpdate();
             }
+        };
 
-        } catch (SQLException e) {
+        try {
+            testDbUtils.doInTransaction(setup_database);
+        } catch (Exception e) {
             logger.error("Database initialization");
             throw new RuntimeException(e);
         }
@@ -88,13 +92,17 @@ public class ViewsTest {
 
     @AfterAll
     static void clean_database(){
-        try(Connection connection = DriverManager.getConnection(testUrl,user,password)) {
+        DbUtils.ThrowingConsumer<Connection, Exception> clean_database = (connection) -> {
             try(PreparedStatement clean_stm = connection.prepareStatement(
                     "TRUNCATE TABLE users,comments, posts, followers RESTART IDENTITY CASCADE")){
                 clean_stm.executeUpdate();
                 logger.info("Cleaned Database");
             }
-        } catch (SQLException e) {
+        };
+
+        try{
+            testDbUtils.doInTransaction(clean_database);
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
