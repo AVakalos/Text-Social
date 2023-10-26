@@ -34,9 +34,9 @@ public class OperationsRepositoryImpl implements OperationsRepository {
         DbUtils.ThrowingConsumer<Connection,Exception> savePostIntoDb = (conn) -> {
             try(PreparedStatement savepost_stm = conn.prepareStatement(
                 "INSERT INTO posts (user_id, text, created) VALUES (?,?,?)")){
-                savepost_stm.setInt(1,postToSave.getUser());
-                savepost_stm.setString(2, postToSave.getText());
-                savepost_stm.setTimestamp(3, Timestamp.valueOf(postToSave.getCreatedAt()));
+                savepost_stm.setInt(1,postToSave.user());
+                savepost_stm.setString(2, postToSave.text());
+                savepost_stm.setTimestamp(3, Timestamp.valueOf(postToSave.createdAt()));
                 savepost_stm.executeUpdate();
             }
         };
@@ -54,10 +54,10 @@ public class OperationsRepositoryImpl implements OperationsRepository {
         DbUtils.ThrowingConsumer<Connection,Exception> saveCommentIntoDb = (conn) -> {
             try(PreparedStatement savecomment_stm = conn.prepareStatement(
                     "INSERT INTO comments (post_id, user_id, text, created) VALUES (?,?,?,?)")){
-                savecomment_stm.setInt(1,commentToSave.getPost());
-                savecomment_stm.setInt(2,commentToSave.getUser());
-                savecomment_stm.setString(3, commentToSave.getText());
-                savecomment_stm.setTimestamp(4, Timestamp.valueOf(commentToSave.getCreatedAt()));
+                savecomment_stm.setInt(1,commentToSave.post());
+                savecomment_stm.setInt(2,commentToSave.user());
+                savecomment_stm.setString(3, commentToSave.text());
+                savecomment_stm.setTimestamp(4, Timestamp.valueOf(commentToSave.createdAt()));
                 savecomment_stm.executeUpdate();
             }
         };

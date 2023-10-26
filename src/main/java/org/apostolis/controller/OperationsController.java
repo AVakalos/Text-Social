@@ -1,12 +1,9 @@
 package org.apostolis.controller;
 
-import io.javalin.http.BadRequestResponse;
 import io.javalin.http.Context;
 import io.javalin.http.NotFoundResponse;
-import org.apostolis.model.Comment;
-import org.apostolis.model.Post;
+import org.apostolis.model.*;
 import org.apostolis.service.OperationsService;
-import org.apostolis.service.RequestValidationService;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
@@ -28,32 +25,33 @@ public class OperationsController {
         String token = Objects.requireNonNull(ctx.header("Authorization")).substring(7);
         Post postToSave = ctx.bodyAsClass(Post.class);
         operationsService.createPost(postToSave, token);
-        ctx.result("User: "+operationsService.getUsername(postToSave.getUser())+" did a new post");
+        ctx.result("User: "+operationsService.getUsername(postToSave.user())+" did a new post");
     }
 
     public void createComment(Context ctx){
         String token = Objects.requireNonNull(ctx.header("Authorization")).substring(7);
         Comment commentToSave = ctx.bodyAsClass(Comment.class);
         operationsService.createComment(commentToSave, token);
-        ctx.result("User: "+operationsService.getUsername(commentToSave.getUser())+" commented on a post");
+        ctx.result("User: "+operationsService.getUsername(commentToSave.user())+" commented on a post");
     }
 
     public void follow(Context ctx){
         String token = Objects.requireNonNull(ctx.header("Authorization")).substring(7);
-        int user = Integer.parseInt(Objects.requireNonNull(ctx.queryParam("user")));
-        int follows = Integer.parseInt(Objects.requireNonNull(ctx.queryParam("follows")));
+        int user = ctx.queryParamAsClass("user", Integer.class).get();
+        int follows = ctx.queryParamAsClass("follows", Integer.class).get();
+        FollowRequest followRequest = new FollowRequest(user, follows);
 
-        operationsService.follow(user,follows, token);
+        operationsService.follow(followRequest, token);
         ctx.result("User: "+operationsService.getUsername(user)+
                 " followed user: "+operationsService.getUsername(follows));
     }
 
     public void unfollow(Context ctx){
         String token = Objects.requireNonNull(ctx.header("Authorization")).substring(7);
-        int user = Integer.parseInt(Objects.requireNonNull(ctx.queryParam("user")));
-        int unfollows = Integer.parseInt(Objects.requireNonNull(ctx.queryParam("unfollows")));
+        int user = ctx.queryParamAsClass("user", Integer.class).get();
+        int unfollows = ctx.queryParamAsClass("unfollows", Integer.class).get();
 
-        operationsService.unfollow(user,unfollows, token);
+        operationsService.unfollow(new UnfollowRequest(user,unfollows), token);
         ctx.result("User: "+operationsService.getUsername(user)+
                 " unfollowed user: "+operationsService.getUsername(unfollows));
     }
@@ -61,16 +59,17 @@ public class OperationsController {
     public void createUrlForPostAndComments(Context ctx) {
         String token = Objects.requireNonNull(ctx.header("Authorization")).substring(7);
 
-        int user = Integer.parseInt(ctx.pathParam("id"));
-        int post = Integer.parseInt(ctx.pathParam("post"));
+        int user = ctx.pathParamAsClass("id", Integer.class).get();
+        int post = ctx.pathParamAsClass("post", Integer.class).get();
 
-        String generated_url = operationsService.createUrlForPostAndComments(user, post, token);
+        String generated_url = operationsService.createUrlForPostAndComments(new CreateLinkRequest(user, post), token);
         ctx.result(generated_url);
     }
 
     public void decodeLink(Context ctx) {
         try{
-            HashMap<String, ArrayList<String>> post_and_comments = operationsService.decodeUrl(ctx.url());
+            HashMap<String, ArrayList<String>> post_and_comments =
+                    operationsService.decodeUrl(new DecodeRequest(ctx.pathParam("url")));
             JSONObject jsonResults = new JSONObject(post_and_comments);
             ctx.result(jsonResults.toString());
         }catch (Exception e){

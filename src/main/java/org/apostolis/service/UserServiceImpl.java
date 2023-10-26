@@ -2,10 +2,8 @@ package org.apostolis.service;
 
 import io.javalin.http.BadRequestResponse;
 import io.javalin.http.UnauthorizedResponse;
-import org.apostolis.model.AuthRequest;
-import org.apostolis.model.AuthResponse;
-import org.apostolis.model.SignupResponse;
-import org.apostolis.model.User;
+import jakarta.validation.ConstraintViolationException;
+import org.apostolis.model.*;
 import org.apostolis.repository.UserRepository;
 import org.apostolis.security.PasswordEncoder;
 
@@ -32,7 +30,7 @@ public class UserServiceImpl implements UserService {
     private boolean checkPassword(String username, String password) {
         try {
             User user = repository.getByUsername(username);
-            String hashed_password = user.getPassword();
+            String hashed_password = user.password();
             return passwordEncoder.checkPassword(password, hashed_password);
         }catch (Exception e){
             System.out.println(e.getMessage());
@@ -42,14 +40,16 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public SignupResponse signup(User UserToSave) {
+        try {
+            ValidationUtils.validateInput(UserToSave);
+        }catch(ConstraintViolationException c){
+            throw new BadRequestResponse(c.getMessage());
+        }
         try{
-            logger.info("Checking if username is already taken...");
-
-            if(repository.getByUsername(UserToSave.getUsername()) != null){
-                logger.info("Username is already taken.");
+            if(repository.getByUsername(UserToSave.username()) != null){
+                logger.warn("Username is already taken.");
                 return new SignupResponse("Username is already taken! Try a different one.",406);
             }
-            logger.info("The username is available for signup.");
         }catch(Exception e){
             throw new UnauthorizedResponse("Could not sign up");
         }
@@ -60,12 +60,17 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public AuthResponse login(AuthRequest request) {
-        String inserted_username = request.getUsername();
-        String inserted_password = request.getPassword();
+        try {
+            ValidationUtils.validateInput(request);
+        }catch(ConstraintViolationException c){
+            throw new BadRequestResponse(c.getMessage());
+        }
+        String inserted_username = request.username();
+        String inserted_password = request.password();
         try{
             User user = repository.getByUsername(inserted_username);
             if(checkPassword(inserted_username,inserted_password)){
-                String token = tokenManager.issueToken(inserted_username,user.getRole());
+                String token = tokenManager.issueToken(inserted_username, Role.valueOf(user.role()));
                 logger.info("User signed in successfully");
                 return new AuthResponse(inserted_username,token,"User signed in",202);
             }

@@ -26,9 +26,9 @@ public class UserRepositoryImpl implements UserRepository {
         DbUtils.ThrowingConsumer<Connection,Exception> insertUserIntoDb = (conn) -> {
             try(PreparedStatement insert_stm = conn.prepareStatement(
                     "INSERT INTO Users (username,password,role) VALUES(?,?,?)")){
-                insert_stm.setString(1, UserToSave.getUsername());
-                insert_stm.setString(2, passwordEncoder.encodePassword(UserToSave.getPassword()));
-                insert_stm.setString(3,String.valueOf(UserToSave.getRole()));
+                insert_stm.setString(1, UserToSave.username());
+                insert_stm.setString(2, passwordEncoder.encodePassword(UserToSave.password()));
+                insert_stm.setString(3,String.valueOf(UserToSave.role()));
                 insert_stm.executeUpdate();
             }
         };

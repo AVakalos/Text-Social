@@ -184,28 +184,29 @@ public class OperationsServiceImplTest {
     @Test
     void follow(){
         String token = testTokenManager.issueToken("premuser",Role.PREMIUM);
-        testOperationService.follow(2,1, token);
+        testOperationService.follow(new FollowRequest(2,1), token);
         assertDoesNotThrow(() -> RuntimeException.class);
     }
 
     @Test
     void followYourselfNotAllowed(){
         String token = testTokenManager.issueToken("freeuser",Role.FREE);
-        assertThrows(UnauthorizedResponse.class, () -> testOperationService.follow(1,1, token));
+        assertThrows(UnauthorizedResponse.class,
+                () -> testOperationService.follow(new FollowRequest(1,1), token));
     }
 
     @Test
     void unfollow(){
         String token = testTokenManager.issueToken("freeuser",Role.FREE);
-        testOperationService.unfollow(1,2, token);
+        testOperationService.unfollow(new UnfollowRequest(1,2), token);
         assertDoesNotThrow(() -> RuntimeException.class);
     }
 
     @Test
     void UrlForPostAndComments(){
         String token = testTokenManager.issueToken("freeuser",Role.FREE);
-        String url = testOperationService.createUrlForPostAndComments(1,1, token);
-        HashMap<String, ArrayList<String>> decoded = testOperationService.decodeUrl(url);
+        String url = testOperationService.createUrlForPostAndComments(new CreateLinkRequest(1,1), token);
+        HashMap<String, ArrayList<String>> decoded = testOperationService.decodeUrl(new DecodeRequest(url));
         assertEquals(2,decoded.get("first_post").size());
         assertEquals("mycomment",decoded.get("first_post").get(0));
     }

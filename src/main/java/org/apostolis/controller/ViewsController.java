@@ -19,7 +19,7 @@ public class ViewsController {
 
     public void getFollowersPostsInReverseChrono(Context ctx){
         String token = Objects.requireNonNull(ctx.header("Authorization")).substring(7);
-        int user = Integer.parseInt(ctx.pathParam("id"));
+        int user = ctx.pathParamAsClass("id",Integer.class).get();
         HashMap<String, ArrayList<String>> results = viewsService.getFollowersPostsInReverseChrono(user, token);
         if(results == null || results.isEmpty()){
             ctx.result("There are no posts from followers or followers doesn't exist");
@@ -29,7 +29,7 @@ public class ViewsController {
     }
     public void getOwnPostsWithLast100CommentsInReverseChrono(Context ctx){
         String token = Objects.requireNonNull(ctx.header("Authorization")).substring(7);
-        int user = Integer.parseInt(ctx.pathParam("id"));
+        int user = ctx.pathParamAsClass("id",Integer.class).get();
         HashMap<String, ArrayList<String>> results =
                 viewsService.getOwnPostsWithLastNCommentsInReverseChrono(user, 100, token);
         if(results == null || results.isEmpty()){
@@ -40,7 +40,7 @@ public class ViewsController {
     }
     public void getAllCommentsOnOwnPosts(Context ctx){
         String token = Objects.requireNonNull(ctx.header("Authorization")).substring(7);
-        int user = Integer.parseInt(ctx.pathParam("id"));
+        int user = ctx.pathParamAsClass("id",Integer.class).get();
         HashMap<String,ArrayList<String>> results = viewsService.getAllCommentsOnOwnPosts(user, token);
         if(results == null || results.isEmpty()){
             ctx.result("There are no comments in any post");
@@ -50,7 +50,7 @@ public class ViewsController {
     }
     public void getLatestCommentsOnOwnOrFollowersPosts(Context ctx){
         String token = Objects.requireNonNull(ctx.header("Authorization")).substring(7);
-        int user = Integer.parseInt(ctx.pathParam("id"));
+        int user = ctx.pathParamAsClass("id",Integer.class).get();
         HashMap<String, String> results = viewsService.getLatestCommentsOnOwnOrFollowersPosts(user, token);
         if(results == null || results.isEmpty()){
             ctx.result("There are no posts");
@@ -60,7 +60,7 @@ public class ViewsController {
     }
     public void getFollowersOf(Context ctx){
         String token = Objects.requireNonNull(ctx.header("Authorization")).substring(7);
-        int user = Integer.parseInt(ctx.pathParam("id"));
+        int user = ctx.pathParamAsClass("id",Integer.class).get();
         ArrayList<String> results = viewsService.getFollowersOf(user,token);
         if(results == null || results.isEmpty()){
             ctx.result("The user has no followers");
@@ -70,7 +70,7 @@ public class ViewsController {
     }
     public void getUsersToFollow(Context ctx){
         String token = Objects.requireNonNull(ctx.header("Authorization")).substring(7);
-        int user = Integer.parseInt(ctx.pathParam("id"));
+        int user = ctx.pathParamAsClass("id",Integer.class).get();
         ArrayList<String> results = viewsService.getUsersToFollow(user,token);
         if(results == null || results.isEmpty()){
             ctx.result("There are no users to follow");

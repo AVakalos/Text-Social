@@ -41,13 +41,13 @@ public class UserController {
         }
 
         SignupResponse rsp = userService.signup(userFromContextBody);
-        ctx.status(rsp.getStatus());
+        ctx.status(rsp.status());
         ctx.json(rsp);
     }
     public void login(Context ctx){
         AuthRequest loginFromContextBody = ctx.bodyAsClass(AuthRequest.class);
         AuthResponse rsp = userService.login(loginFromContextBody);
-        ctx.status(rsp.getStatus());
+        ctx.status(rsp.status());
         ctx.json(rsp);
     }
 

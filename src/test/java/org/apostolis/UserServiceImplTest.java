@@ -62,8 +62,8 @@ public class UserServiceImplTest {
     void setupDatabase(){
         DbUtils.ThrowingConsumer<Connection, Exception> setup_database = (connection) -> {
             String clean = "TRUNCATE TABLE users RESTART IDENTITY CASCADE";
-            String encoded_password = testPasswordEncoder.encodePassword("pass1");
-            String insert = "INSERT INTO users (username,password,role) VALUES('testuser1',?,'FREE')";
+            String encoded_password = testPasswordEncoder.encodePassword("pass1234");
+            String insert = "INSERT INTO users (username,password,role) VALUES('testuser1@test.gr',?,'FREE')";
             try(PreparedStatement initialize_table = connection.prepareStatement(insert);
                 PreparedStatement clean_table = connection.prepareStatement(clean)){
                 clean_table.executeUpdate();
@@ -82,39 +82,39 @@ public class UserServiceImplTest {
 
     @Test
     void testSignUp(){
-        User testuser = new User("testuser","pass","FREE");
+        User testuser = new User("testuser@test.gr","pass1234","FREE");
         SignupResponse producedResponse = testUserService.signup(testuser);
-        assertEquals(201,producedResponse.getStatus());
+        assertEquals(201,producedResponse.status());
     }
     @Test
     void testUnsuccessfulSignUp(){
-        User testuser = new User("testuser1","pass1","FREE");
+        User testuser = new User("testuser1@test.gr","pass1234","FREE");
         SignupResponse producedResponse = testUserService.signup(testuser);
-        assertEquals(406,producedResponse.getStatus());
+        assertEquals(406,producedResponse.status());
     }
 
     @Test
     void testLogin(){
-        AuthRequest testRequest = new AuthRequest("testuser1","pass1");
+        AuthRequest testRequest = new AuthRequest("testuser1@test.gr","pass1234");
         AuthResponse producedResponse = testUserService.login(testRequest);
-        assertEquals(202,producedResponse.getStatus());
+        assertEquals(202,producedResponse.status());
     }
 
     @Test
     void testUnsuccessfulLogin(){
-        AuthRequest testRequest = new AuthRequest("testuser1","incorrect");
+        AuthRequest testRequest = new AuthRequest("testuser1@test.gr","incorrect");
         AuthResponse producedResponse = testUserService.login(testRequest);
-        assertEquals(401,producedResponse.getStatus());
+        assertEquals(401,producedResponse.status());
     }
 
     @Test
     void testAuth(){
-        String token = testTokenManager.issueToken("testuser1",Role.valueOf("FREE"));
+        String token = testTokenManager.issueToken("testuser1@test.gr",Role.valueOf("FREE"));
         assertTrue(testTokenManager.validateToken(token));
     }
     @Test
     void testUnsuccessfulAuth(){
-        String token = testTokenManager.issueToken("testuser1",Role.valueOf("FREE"));
+        String token = testTokenManager.issueToken("testuser1@test.gr",Role.valueOf("FREE"));
         String InvalidToken = token+"sdd";
         assertThrows(Exception.class, () -> testTokenManager.validateToken(InvalidToken));
     }

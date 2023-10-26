@@ -2,24 +2,7 @@ package org.apostolis.model;
 
 /* Request entity object for structured login requests */
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
-public class AuthRequest {
-    private final String username;
-    private final String password;
-
-    @JsonCreator
-    public AuthRequest(@JsonProperty("username") String username, @JsonProperty("password")String password) {
-        this.username = username;
-        this.password = password;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-}
+public record AuthRequest(@NotNull @NotBlank String username, @NotNull @NotBlank String password){ }
