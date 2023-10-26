@@ -2,15 +2,21 @@ package org.apostolis.model;
 
 /* Response entity object for structured login responses  */
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class AuthResponse {
-    private String username;
-    private String token;
-    private String message;
-    private int status;
+    private final String username;
+    private final String token;
+    private final String message;
+    private final int status;
 
-    public AuthResponse(){ }
 
-    public AuthResponse(String username, String token, String message,int status) {
+    @JsonCreator
+    public AuthResponse(@JsonProperty("username") String username,
+                        @JsonProperty("token") String token,
+                        @JsonProperty("message") String message,
+                        @JsonProperty("status") int status) {
         this.username = username;
         this.token = token;
         this.message = message;
@@ -21,26 +27,15 @@ public class AuthResponse {
         return username;
     }
 
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
     public String getToken() {
         return token;
-    }
-
-    public void setToken(String token) {
-        this.token = token;
-    }
-
-    public void setMessage(String message) {
-        this.message = message;
     }
 
     public int getStatus() {
         return status;
     }
-    public void setStatus(int status) {
-        this.status = status;
+
+    public String getMessage() {
+        return message;
     }
 }

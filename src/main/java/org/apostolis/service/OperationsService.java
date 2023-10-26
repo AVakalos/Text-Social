@@ -9,8 +9,9 @@ import java.util.HashMap;
 public interface OperationsService {
     void createPost(Post postToSave, String token);
     void createComment(Comment commentToSave, String token);
-    void follow(int follower, int to_follow);
-    void unfollow(int follower, int to_unfollow);
-    String createUrlForPostAndComments(int user, int post);
+    void follow(int follower, int to_follow, String token);
+    void unfollow(int follower, int to_unfollow, String token);
+    String createUrlForPostAndComments(int user, int post, String token);
     HashMap<String, ArrayList<String>> decodeUrl(String url);
+    String getUsername(int user_id);
 }

@@ -19,80 +19,52 @@ import java.util.Objects;
 public class OperationsController {
 
     private final OperationsService operationsService;
-    private final RequestValidationService requestValidationService;
 
-    public OperationsController(OperationsService operationsService, RequestValidationService requestValidationService) {
+    public OperationsController(OperationsService operationsService) {
         this.operationsService = operationsService;
-        this.requestValidationService = requestValidationService;
     }
 
     public void createPost(Context ctx){
         String token = Objects.requireNonNull(ctx.header("Authorization")).substring(7);
-
-        Post postToSave = ctx.bodyValidator(Post.class).check(
-                post -> post.getUser() == requestValidationService.extractUserId(token),
-                "You are not allowed to make a post as another user").get();
-
+        Post postToSave = ctx.bodyAsClass(Post.class);
         operationsService.createPost(postToSave, token);
-        ctx.result("User: "+requestValidationService.extractUsername(postToSave.getUser())+" did a new post");
+        ctx.result("User: "+operationsService.getUsername(postToSave.getUser())+" did a new post");
     }
 
     public void createComment(Context ctx){
         String token = Objects.requireNonNull(ctx.header("Authorization")).substring(7);
-
-        Comment commentToSave = ctx.bodyValidator(Comment.class).check(
-                comment -> comment.getUser() == requestValidationService.extractUserId(token),
-                "You are not allowed to make a comment as another user").get();
-
+        Comment commentToSave = ctx.bodyAsClass(Comment.class);
         operationsService.createComment(commentToSave, token);
-        ctx.result("User: "+requestValidationService.extractUsername(commentToSave.getUser())+" commented on a post");
+        ctx.result("User: "+operationsService.getUsername(commentToSave.getUser())+" commented on a post");
     }
 
     public void follow(Context ctx){
         String token = Objects.requireNonNull(ctx.header("Authorization")).substring(7);
-
-        int user = ctx.queryParamAsClass("user", Integer.class).check(
-                u -> u == requestValidationService.extractUserId(token),
-                "Your request id does not match with your authentication id").get();
+        int user = Integer.parseInt(Objects.requireNonNull(ctx.queryParam("user")));
         int follows = Integer.parseInt(Objects.requireNonNull(ctx.queryParam("follows")));
 
-        try{
-            operationsService.follow(user,follows);
-            ctx.result("User: "+requestValidationService.extractUsername(user)+
-                    " followed user: "+requestValidationService.extractUsername(follows));
-        }catch(NullPointerException e){
-            throw new BadRequestResponse("Query params are null");
-        }
+        operationsService.follow(user,follows, token);
+        ctx.result("User: "+operationsService.getUsername(user)+
+                " followed user: "+operationsService.getUsername(follows));
     }
 
     public void unfollow(Context ctx){
         String token = Objects.requireNonNull(ctx.header("Authorization")).substring(7);
-
-        int user = ctx.queryParamAsClass("user", Integer.class).check(
-                u -> u == requestValidationService.extractUserId(token),
-                "Your request id does not match with your authentication id").get();
+        int user = Integer.parseInt(Objects.requireNonNull(ctx.queryParam("user")));
         int unfollows = Integer.parseInt(Objects.requireNonNull(ctx.queryParam("unfollows")));
 
-        try{
-            operationsService.unfollow(user,unfollows);
-            ctx.result("User: "+requestValidationService.extractUsername(user)+
-                    " unfollowed user: "+requestValidationService.extractUsername(unfollows));
-        }catch(NullPointerException e){
-            throw new BadRequestResponse("Query params are null");
-        }
+        operationsService.unfollow(user,unfollows, token);
+        ctx.result("User: "+operationsService.getUsername(user)+
+                " unfollowed user: "+operationsService.getUsername(unfollows));
     }
 
     public void createUrlForPostAndComments(Context ctx) {
         String token = Objects.requireNonNull(ctx.header("Authorization")).substring(7);
-        int user = ctx.pathParamAsClass("id", Integer.class).check(
-                u -> u == requestValidationService.extractUserId(token),
-                "Your request id does not match with your authentication id").get();
 
-        ArrayList<Integer> user_post_ids = requestValidationService.getUsersPostIds(user);
-        int post = ctx.pathParamAsClass("post", Integer.class).check(
-                user_post_ids::contains,"This post is not posted by you").get();
+        int user = Integer.parseInt(ctx.pathParam("id"));
+        int post = Integer.parseInt(ctx.pathParam("post"));
 
-        String generated_url = operationsService.createUrlForPostAndComments(user, post);
+        String generated_url = operationsService.createUrlForPostAndComments(user, post, token);
         ctx.result(generated_url);
     }
 

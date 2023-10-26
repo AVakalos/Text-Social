@@ -2,11 +2,15 @@ package org.apostolis.model;
 
 /* Response entity for structured signup responses  */
 
-public class SignupResponse {
-    private String message;
-    private int status;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
-    public SignupResponse(String message, int status) {
+public class SignupResponse {
+    private final String message;
+    private final int status;
+
+    @JsonCreator
+    public SignupResponse(@JsonProperty("message") String message, @JsonProperty("status") int status) {
         this.message = message;
         this.status = status;
     }
@@ -15,15 +19,8 @@ public class SignupResponse {
         return message;
     }
 
-    public void setMessage(String message) {
-        this.message = message;
-    }
-
     public int getStatus() {
         return status;
     }
 
-    public void setStatus(int status) {
-        this.status = status;
-    }
 }

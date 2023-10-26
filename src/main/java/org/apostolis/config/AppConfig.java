@@ -15,6 +15,8 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.time.Clock;
+import java.time.ZoneId;
 import java.util.Properties;
 
 public class AppConfig {
@@ -31,9 +33,13 @@ public class AppConfig {
     private final OperationsController operationsController;
 
     private final ViewsRepository viewsRepository;
+
+    private final ViewsService viewsService;
     private final ViewsController viewsController;
 
     private static HikariDataSource ds;
+
+    public static Clock clock = Clock.system(ZoneId.of("Europe/Athens"));
 
 
     public AppConfig(String mode){
@@ -42,25 +48,30 @@ public class AppConfig {
         userRepository = new UserRepositoryImpl(dbUtils);
         tokenManager  = new JjwtTokenManagerImpl();
         passwordEncoder  = new PasswordEncoder();
-        userService = new UserServiceImpl(userRepository, tokenManager,passwordEncoder);
+        userService = new UserServiceImpl(userRepository, tokenManager, passwordEncoder);
         userController = new UserController(userService);
 
         operationsRepository = new OperationsRepositoryImpl(dbUtils);
+        requestValidationService = new RequestValidationServiceImpl(tokenManager, userRepository, operationsRepository);
+
+
         if(mode.equals("production")){
             operationsService = new OperationsServiceImpl(
-                    operationsRepository, tokenManager, 1000, 3000, 5);
+                    operationsRepository, tokenManager, requestValidationService,
+                    1000, 3000, 5);
         } else if (mode.equals("test")) {
             operationsService = new OperationsServiceImpl(
-                    operationsRepository, tokenManager,20,30,2);
+                    operationsRepository, tokenManager, requestValidationService,
+                    20,30,2);
         }else{
             throw new RuntimeException("Specify mode 'production' or 'test' when initializing AppConfig");
         }
 
-        requestValidationService = new RequestValidationServiceImpl(tokenManager, userRepository, operationsRepository);
-        operationsController = new OperationsController(operationsService, requestValidationService);
+        operationsController = new OperationsController(operationsService);
 
         viewsRepository = new ViewsRepositoryImpl(dbUtils);
-        viewsController = new ViewsController(viewsRepository, requestValidationService);
+        viewsService = new ViewsServiceImpl(viewsRepository, requestValidationService);
+        viewsController = new ViewsController(viewsService);
 
         if(mode.equals("production")){
             Properties appProps = readProperties();

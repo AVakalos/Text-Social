@@ -1,5 +1,7 @@
 package org.apostolis.model;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import me.geso.tinyvalidator.constraints.Email;
 import me.geso.tinyvalidator.constraints.Size;
 
@@ -7,17 +9,19 @@ import me.geso.tinyvalidator.constraints.Size;
 
 public class User {
     @Email
-    private String username;
+    private final String username;
     @Size(min = 8)
-    private String password;
-    private Role role;
+    private final String password;
+    private final Role role;
 
-    public User(String username, String password, String role){
+    @JsonCreator
+    public User(@JsonProperty("username") String username,
+                @JsonProperty("password") String password,
+                @JsonProperty("role") String role){
         this.username = username;
         this.password = password;
         this.role = Role.valueOf(role);
     }
-    public User() {}
 
     public String getUsername() {
         return username;

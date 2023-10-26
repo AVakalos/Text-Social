@@ -36,7 +36,7 @@ public class OperationsRepositoryImpl implements OperationsRepository {
                 "INSERT INTO posts (user_id, text, created) VALUES (?,?,?)")){
                 savepost_stm.setInt(1,postToSave.getUser());
                 savepost_stm.setString(2, postToSave.getText());
-                savepost_stm.setTimestamp(3, new Timestamp(System.currentTimeMillis()));
+                savepost_stm.setTimestamp(3, Timestamp.valueOf(postToSave.getCreatedAt()));
                 savepost_stm.executeUpdate();
             }
         };
@@ -57,7 +57,7 @@ public class OperationsRepositoryImpl implements OperationsRepository {
                 savecomment_stm.setInt(1,commentToSave.getPost());
                 savecomment_stm.setInt(2,commentToSave.getUser());
                 savecomment_stm.setString(3, commentToSave.getText());
-                savecomment_stm.setTimestamp(4, new Timestamp(System.currentTimeMillis()));
+                savecomment_stm.setTimestamp(4, Timestamp.valueOf(commentToSave.getCreatedAt()));
                 savecomment_stm.executeUpdate();
             }
         };

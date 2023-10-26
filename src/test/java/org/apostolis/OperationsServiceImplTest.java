@@ -13,6 +13,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.sql.*;
+import java.time.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -29,18 +30,24 @@ public class OperationsServiceImplTest {
 
     static AppConfig testAppConfig = new AppConfig("test");
 
+    static Clock constantClock = Clock.fixed(Instant.parse("2023-10-22T10:00:00Z"),ZoneOffset.UTC);
+
 
     static void preparePostAndFollow(Connection connection) throws SQLException{
         String insert_post = "INSERT INTO posts (user_id, text, created) VALUES (1,'first_post',?)";
-        String insert_comments = "INSERT INTO comments (post_id, user_id, text, created) VALUES (1,2,'comment',?),(1,1,'mycomment',?)";
+        String insert_comments = "INSERT INTO comments (post_id, user_id, text, created) VALUES (1,2,'comment',?)," +
+                                                                                                "(1,1,'mycomment',?)";
         String insert_follow = "INSERT INTO followers VALUES(1,2)";
         try(PreparedStatement add_post_stm = connection.prepareStatement(insert_post);
             PreparedStatement add_comments_stm = connection.prepareStatement(insert_comments);
             PreparedStatement add_follow_stm = connection.prepareStatement(insert_follow)){
-            add_post_stm.setTimestamp(1, new Timestamp(System.currentTimeMillis()));
+            add_post_stm.setTimestamp(1, Timestamp.from(Instant.now(constantClock)));
             add_post_stm.executeUpdate();
-            add_comments_stm.setTimestamp(1, new Timestamp(System.currentTimeMillis()+2000));
-            add_comments_stm.setTimestamp(2, new Timestamp(System.currentTimeMillis()+3000));
+
+            add_comments_stm.setTimestamp(1, Timestamp.from(
+                    Instant.now(Clock.offset(constantClock, Duration.ofSeconds(3)))));
+            add_comments_stm.setTimestamp(2, Timestamp.from(
+                    Instant.now(Clock.offset(constantClock, Duration.ofSeconds(5)))));
             add_comments_stm.executeUpdate();
             add_follow_stm.executeUpdate();
         }
@@ -89,9 +96,12 @@ public class OperationsServiceImplTest {
     @BeforeEach
     void intermediateSetupDatabase() {
         DbUtils.ThrowingConsumer<Connection, Exception> intermediate_setup_database = (connection) -> {
-            try(PreparedStatement clean_posts = connection.prepareStatement("TRUNCATE TABLE posts RESTART IDENTITY CASCADE");
-                PreparedStatement clean_followers = connection.prepareStatement("TRUNCATE TABLE followers RESTART IDENTITY CASCADE");
-                PreparedStatement clean_comments = connection.prepareStatement("TRUNCATE TABLE comments RESTART IDENTITY CASCADE")){
+            try(PreparedStatement clean_posts = connection.prepareStatement(
+                    "TRUNCATE TABLE posts RESTART IDENTITY CASCADE");
+                PreparedStatement clean_followers = connection.prepareStatement(
+                        "TRUNCATE TABLE followers RESTART IDENTITY CASCADE");
+                PreparedStatement clean_comments = connection.prepareStatement(
+                        "TRUNCATE TABLE comments RESTART IDENTITY CASCADE")){
                 clean_posts.executeUpdate();
                 clean_comments.executeUpdate();
                 clean_followers.executeUpdate();
@@ -161,9 +171,9 @@ public class OperationsServiceImplTest {
     @Test
     void commentFromPremiumUser(){
         String token = testTokenManager.issueToken("premuser",Role.PREMIUM);
-        Comment comment1 = new Comment(1,1,"comment1");
-        Comment comment2 = new Comment(1,1,"comment2");
-        Comment comment3 = new Comment(1,1,"comment3");
+        Comment comment1 = new Comment(2,1,"comment1");
+        Comment comment2 = new Comment(2,1,"comment2");
+        Comment comment3 = new Comment(2,1,"comment3");
         testOperationService.createComment(comment1, token);
         testOperationService.createComment(comment2, token);
         testOperationService.createComment(comment3, token);
@@ -173,24 +183,28 @@ public class OperationsServiceImplTest {
 
     @Test
     void follow(){
-        testOperationService.follow(2,1);
+        String token = testTokenManager.issueToken("premuser",Role.PREMIUM);
+        testOperationService.follow(2,1, token);
         assertDoesNotThrow(() -> RuntimeException.class);
     }
 
     @Test
     void followYourselfNotAllowed(){
-        assertThrows(UnauthorizedResponse.class, () -> testOperationService.follow(1,1));
+        String token = testTokenManager.issueToken("freeuser",Role.FREE);
+        assertThrows(UnauthorizedResponse.class, () -> testOperationService.follow(1,1, token));
     }
 
     @Test
     void unfollow(){
-        testOperationService.unfollow(1,2);
+        String token = testTokenManager.issueToken("freeuser",Role.FREE);
+        testOperationService.unfollow(1,2, token);
         assertDoesNotThrow(() -> RuntimeException.class);
     }
 
     @Test
     void UrlForPostAndComments(){
-        String url = testOperationService.createUrlForPostAndComments(1,1);
+        String token = testTokenManager.issueToken("freeuser",Role.FREE);
+        String url = testOperationService.createUrlForPostAndComments(1,1, token);
         HashMap<String, ArrayList<String>> decoded = testOperationService.decodeUrl(url);
         assertEquals(2,decoded.get("first_post").size());
         assertEquals("mycomment",decoded.get("first_post").get(0));
